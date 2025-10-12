@@ -1,38 +1,59 @@
 import axios from "axios";
 
-const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:8000";
+// 1. CORRECTED: Read the base URL from Vite's environment variables (`import.meta.env`).
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 const api = axios.create({
-  baseURL: API_BASE,
-  withCredentials: true,
+  baseURL: API_BASE_URL,
+  withCredentials: true, // This is important for handling sessions/cookies across domains.
 });
 
-export async function listEmails() {
-  const res = await api.get("/gmail/list");
-  return res.data;
+
+// --- AUTHENTICATION ---
+
+/**
+ * Constructs the full URL for the Google OAuth login endpoint.
+ * This is not an API call but a URL construction for the browser to redirect to.
+ * @returns The full URL for Google login.
+ */
+export function getGoogleLoginUrl(): string {
+  return `${API_BASE_URL}/auth/google/login`;
 }
 
-export async function fetchInbox() {
-  const res = await api.get("/gmail/fetch");
-  return res.data;
+
+// --- GMAIL SERVICES ---
+
+/**
+ * 2. CORRECTED: Fetches emails by calling the correct backend endpoint (`/gmail/inbox`).
+ * @returns A promise that resolves to the list of emails.
+ */
+export async function fetchEmails() {
+  try {
+    const response = await api.get("/gmail/inbox");
+    // The backend returns a JSON object like {"emails": [...]}, so we access the 'emails' property.
+    return response.data.emails || [];
+  } catch (error) {
+    console.error("Error fetching emails:", error);
+    // Return an empty array on error to prevent the UI from crashing.
+    return [];
+  }
 }
+
+
+// --- AI SERVICES ---
+// 3. CORRECTED: These functions are updated to match the actual backend AI routes.
 
 export async function classifyText(text: string) {
-  const res = await api.post("/ai/classify", { text });
-  return res.data;
+  const response = await api.post("/ai/classify", { text });
+  return response.data;
 }
 
 export async function summarizeText(text: string) {
-  const res = await api.post("/ai/summarize", { text });
-  return res.data;
+  const response = await api.post("/ai/summarize", { text });
+  return response.data;
 }
 
 export async function rewriteText(text: string, tone: string) {
-  const res = await api.post("/ai/rewrite", { text, tone });
-  return res.data;
-}
-
-// auth endpoints
-export function getGoogleLoginUrl() {
-  return `${API_BASE}/auth/google/login`;
+  const response = await api.post("/ai/rewrite", { text, tone });
+  return response.data;
 }
