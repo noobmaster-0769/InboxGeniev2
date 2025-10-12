@@ -1,0 +1,44 @@
+services:
+  db:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=inboxgenie
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:6-alpine
+
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      - db
+      - redis
+
+  worker:
+    build: .
+    command: celery -A celery_app.celery_app worker --loglevel=info
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  postgres_data:
