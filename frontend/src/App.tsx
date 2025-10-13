@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getGoogleLoginUrl, fetchEmails } from "./api";
+import { getGoogleLoginUrl, fetchEmails } from "./services/api";
 
 function App() {
   const [emails, setEmails] = useState<any[]>([]);
