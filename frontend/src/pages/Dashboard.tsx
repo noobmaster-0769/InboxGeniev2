@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import InboxHeader from "@/components/InboxHeader";
 import InboxSidebar from "@/components/InboxSidebar";
 import EmailCard from "@/components/EmailCard";
@@ -12,186 +12,146 @@ import {
   Filter,
   SortDesc,
   LayoutGrid,
-  List
+  List,
+  Search,
+  RefreshCw
 } from "lucide-react";
+import { fetchEmails, Email } from "../services/api";
 
-// Mock email data
-const mockEmails = [
-  {
-    id: "1",
-    sender: "Sarah Johnson",
-    subject: "Q4 Marketing Strategy Review",
-    preview: "Hi team, I've prepared the quarterly review document for our marketing initiatives. Please review the attached analytics report...",
-    time: "2 min ago",
-    isRead: false,
-    isStarred: true,
-    priority: "high" as const,
-    category: "priority" as const,
-    aiSummary: "Marketing team requests review of Q4 strategy document with analytics. Action required: Review attached report by EOW.",
-    sentiment: "neutral" as const,
-  },
-  {
-    id: "2",
-    sender: "LinkedIn",
-    subject: "Your weekly network update",
-    preview: "See who viewed your profile this week and connect with professionals in your industry...",
-    time: "15 min ago",
-    isRead: true,
-    isStarred: false,
-    priority: "low" as const,
-    category: "social" as const,
-    aiSummary: "Weekly LinkedIn digest with profile views and connection suggestions. No action required.",
-  },
-  {
-    id: "3",
-    sender: "Amazon",
-    subject: "Your order has been shipped!",
-    preview: "Great news! Your recent order is on its way. Track your package and see estimated delivery...",
-    time: "1 hour ago",
-    isRead: false,
-    isStarred: false,
-    priority: "medium" as const,
-    category: "promotions" as const,
-  },
-  {
-    id: "4",
-    sender: "Alex Chen",
-    subject: "Project Collaboration Opportunity",
-    preview: "I hope this email finds you well. I'm reaching out regarding a potential collaboration on the upcoming AI project...",
-    time: "3 hours ago",
-    isRead: true,
-    isStarred: true,
-    priority: "high" as const,
-    category: "priority" as const,
-    aiSummary: "Business collaboration proposal for AI project. Suggests scheduling call to discuss partnership details.",
-    sentiment: "positive" as const,
-  },
-  {
-    id: "5",
-    sender: "GitHub",
-    subject: "Security alert for your repository",
-    preview: "We detected a potential security vulnerability in one of your repositories. Please review the following...",
-    time: "4 hours ago",
-    isRead: false,
-    isStarred: false,
-    priority: "high" as const,
-    category: "updates" as const,
-    aiSummary: "Security vulnerability detected in GitHub repository. Immediate action required to review and patch.",
-    sentiment: "negative" as const,
-  },
-];
+const CATEGORIES = ['General', 'Urgent', 'Task', 'Important', 'Promotion'];
 
-export default function Dashboard() {
+interface DashboardProps {
+  onLogout: () => void;
+}
+
+function Dashboard({ onLogout }: DashboardProps) {
+  const [emails, setEmails] = useState<Email[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState("all");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [showComposer, setShowComposer] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedEmailId, setExpandedEmailId] = useState<string | null>(null);
 
-  const filteredEmails = selectedTab === "all" 
-    ? mockEmails 
-    : mockEmails.filter(email => email.category === selectedTab);
+  const loadEmails = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data: any[] = await fetchEmails();
+      
+      // Transform backend data to match our Email interface
+      const emailsWithFeatures: Email[] = data.map((email: any) => ({
+        id: email.id ? email.id.toString() : Math.random().toString(),
+        sender: email.sender || "Unknown Sender",
+        subject: email.subject || "No Subject",
+        snippet: email.snippet || "No snippet available",
+        content: email.snippet + "\n\nThis is placeholder content for the full email body.",
+        category: CATEGORIES[Math.floor(Math.random() * (CATEGORIES.length - 1)) + 1] as any,
+        status: 'inbox',
+        isStarred: email.isStarred || false,
+        date: email.date ? new Date(email.date).toLocaleDateString() : new Date().toLocaleDateString(),
+        isRead: email.isRead || false,
+        aiSummary: `This is a sample AI summary for the email from ${email.sender}. The main topic is "${email.subject}".`,
+      }));
+      setEmails(emailsWithFeatures);
+    } catch (err) {
+      console.error("Failed to load emails:", err);
+      setError("Could not retrieve emails.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadEmails();
+  }, []);
+
+  const filteredEmails = useMemo(() => {
+    let tempEmails = emails;
+
+    if (selectedTab !== "all") {
+      if (selectedTab === "unread") tempEmails = tempEmails.filter(e => !e.isRead);
+      else if (selectedTab === "starred") tempEmails = tempEmails.filter(e => e.isStarred);
+      else tempEmails = tempEmails.filter(e => e.category === selectedTab);
+    }
+    
+    if (searchQuery) {
+      tempEmails = tempEmails.filter(e =>
+        (e.sender && e.sender.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (e.subject && e.subject.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+    }
+
+    return tempEmails;
+  }, [emails, selectedTab, searchQuery]);
+
+  const handleEmailClick = (id: string) => {
+    setExpandedEmailId(prevId => prevId === id ? null : id);
+  };
+
+  const counts = {
+    unread: emails.filter(e => !e.isRead).length,
+    starred: emails.filter(e => e.isStarred).length,
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      <InboxHeader />
-      
-      <div className="flex">
-        <InboxSidebar />
-        
-        <main className="flex-1 p-6 space-y-6">
-          {/* Controls */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <h2 className="text-2xl font-bold text-foreground">Dashboard</h2>
-              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                <Sparkles className="w-3 h-3 mr-1" />
-                AI Powered
-              </Badge>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="hover-lift"
-                onClick={() => setViewMode(viewMode === "list" ? "grid" : "list")}
-              >
-                {viewMode === "list" ? <LayoutGrid className="w-4 h-4" /> : <List className="w-4 h-4" />}
-              </Button>
-              
-              <Button variant="outline" size="sm" className="hover-lift">
-                <SortDesc className="w-4 h-4 mr-2" />
-                Sort
-              </Button>
-              
-              <Button variant="outline" size="sm" className="hover-lift">
-                <Filter className="w-4 h-4 mr-2" />
-                Filter
-              </Button>
-              
-              <Button 
-                className="ai-button hover-glow"
-                onClick={() => setShowComposer(!showComposer)}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Compose
-              </Button>
-            </div>
+    <div className="flex h-screen bg-gradient-to-b from-[#1e1b4b] to-[#4c1d95] font-['Inter',_sans-serif] text-gray-200">
+      <InboxSidebar onLogout={onLogout} activeCategory={selectedTab} setActiveCategory={setSelectedTab} counts={counts} />
+
+      <main className="flex-1 flex flex-col">
+        {/* Header with search */}
+        <header className="flex items-center justify-center p-4 border-b border-gray-500/50 flex-shrink-0">
+          <div className="relative w-1/2 max-w-lg">
+            <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search emails..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-gray-800/50 border border-gray-700 rounded-full py-2.5 pl-10 pr-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
           </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="ml-4 hover-lift"
+            onClick={loadEmails}
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
+        </header>
 
-          {/* AI Composer */}
-          {showComposer && (
-            <div className="slide-up">
-              <AIComposer />
+        {/* Email List Area */}
+        <div className="flex-1 overflow-y-auto">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full text-slate-400">
+              <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+              Loading your inbox...
             </div>
+          ) : error ? (
+            <div className="flex items-center justify-center h-full text-red-400">{error}</div>
+          ) : filteredEmails.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-slate-400">No emails found.</div>
+          ) : (
+            filteredEmails.map((email) => (
+              <EmailCard 
+                key={email.id} 
+                email={email} 
+                isExpanded={expandedEmailId === email.id}
+                onClick={handleEmailClick}
+                onArchive={() => {}}
+                onTrash={() => {}}
+                onToggleStar={() => {}}
+                onMoveToInbox={() => {}}
+              />
+            ))
           )}
-
-          {/* Email Tabs */}
-          <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5 bg-muted">
-              <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                All ({mockEmails.length})
-              </TabsTrigger>
-              <TabsTrigger value="priority" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                Priority ({mockEmails.filter(e => e.category === "priority").length})
-              </TabsTrigger>
-              <TabsTrigger value="social" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                Social ({mockEmails.filter(e => e.category === "social").length})
-              </TabsTrigger>
-              <TabsTrigger value="promotions" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                Promotions ({mockEmails.filter(e => e.category === "promotions").length})
-              </TabsTrigger>
-              <TabsTrigger value="updates" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                Updates ({mockEmails.filter(e => e.category === "updates").length})
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value={selectedTab} className="mt-6">
-              <div className={viewMode === "grid" 
-                ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" 
-                : "space-y-3"
-              }>
-                {filteredEmails.map((email, index) => (
-                  <div 
-                    key={email.id} 
-                    className="fade-in" 
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <EmailCard email={email} />
-                  </div>
-                ))}
-              </div>
-              
-              {filteredEmails.length === 0 && (
-                <div className="text-center py-12">
-                  <Sparkles className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-lg font-medium text-muted-foreground">No emails in this category</p>
-                  <p className="text-sm text-muted-foreground">AI will automatically organize new emails here</p>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }
+
+export default Dashboard;

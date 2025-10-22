@@ -1,8 +1,9 @@
 import axios from "axios";
 
-// Read the base URL from Vite's environment variables (`import.meta.env`).
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+// FIX: Hardcoded the backend URL to resolve the 'import.meta' build warning.
+const API_BASE_URL = "http://localhost:8000";
 
+// Create a reusable Axios instance for API calls
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
@@ -19,7 +20,7 @@ export function getGoogleLoginUrl(): string {
 /**
  * Fetches the user's emails from the backend's /gmail/inbox endpoint.
  */
-export async function fetchEmails() {
+export async function fetchEmails(): Promise<any[]> {
   try {
     const response = await api.get("/gmail/inbox");
     // The backend returns an object like { emails: [...] }, so we extract the array.
@@ -31,3 +32,17 @@ export async function fetchEmails() {
   }
 }
 
+// --- TYPE DEFINITIONS ---
+export interface Email {
+  id: string; 
+  sender: string;
+  subject: string;
+  snippet: string;
+  content?: string; // Full content
+  category: 'Urgent' | 'Task' | 'Important' | 'Promotion' | 'General';
+  status: 'inbox' | 'archived' | 'trashed';
+  isStarred: boolean;
+  date: string;
+  isRead: boolean;
+  aiSummary?: string;
+}
