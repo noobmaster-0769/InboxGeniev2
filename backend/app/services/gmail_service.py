@@ -1,12 +1,21 @@
-# backend/app/services/gmail_service.py
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import Flow
+from sqlalchemy.orm import Session
+from typing import List
+
 from app.config import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI
 from app.utils.crypto import encrypt_text, decrypt_text
 from app.models import User, Email
-from sqlalchemy.orm import Session
-from typing import List, Optional
+
+# CORRECTED: Using full, explicit scope URLs to ensure consistency.
+SCOPES = [
+    "openid",
+    "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/userinfo.profile",
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.send",
+]
 
 def exchange_code_and_store_tokens(code: str, db: Session) -> dict:
     flow = Flow.from_client_config(
@@ -18,19 +27,14 @@ def exchange_code_and_store_tokens(code: str, db: Session) -> dict:
                 "token_uri": "https://oauth2.googleapis.com/token",
             }
         },
-        scopes=[
-            "openid",
-            "email",
-            "profile",
-            "https://www.googleapis.com/auth/gmail.readonly",
-            "https://www.googleapis.com/auth/gmail.send",
-        ],
+        scopes=SCOPES,
         redirect_uri=GOOGLE_REDIRECT_URI,
     )
+    
     flow.fetch_token(code=code)
     creds = flow.credentials
 
-    # fetch user profile using oauth2 v2
+    # Fetch user profile using oauth2 v2
     oauth2 = build("oauth2", "v2", credentials=creds)
     profile = oauth2.userinfo().get().execute()
     email = profile.get("email")
@@ -40,7 +44,7 @@ def exchange_code_and_store_tokens(code: str, db: Session) -> dict:
     if not user:
         user = User(email=email, google_id=google_id)
 
-    # store encrypted tokens (refresh_token may be None if previously granted)
+    # Store encrypted tokens (refresh_token may be None if previously granted)
     if getattr(creds, "refresh_token", None):
         user.enc_refresh_token = encrypt_text(creds.refresh_token)
     if getattr(creds, "token", None):

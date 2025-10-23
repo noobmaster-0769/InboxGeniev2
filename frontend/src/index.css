@@ -1,226 +1,39 @@
+/* Import the Inter font for the correct typography */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* Apply Tailwind base, components, and utilities */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* InboxGenie Design System - AI-Powered Email Dashboard */
-
 @layer base {
-  :root {
-    /* Core Colors - Modern AI Theme */
-    --background: 210 40% 98%;
-    --foreground: 226 63% 8%;
-
-    /* Card System */
-    --card: 0 0% 100%;
-    --card-foreground: 226 63% 8%;
-
-    /* Popover */
-    --popover: 0 0% 100%;
-    --popover-foreground: 226 63% 8%;
-
-    /* AI Primary - Deep Blue */
-    --primary: 224 76% 48%;
-    --primary-foreground: 0 0% 98%;
-    --primary-hover: 224 76% 42%;
-    --primary-light: 224 100% 95%;
-
-    /* AI Secondary - Purple Accent */
-    --secondary: 267 84% 81%;
-    --secondary-foreground: 226 63% 8%;
-    --secondary-hover: 267 84% 75%;
-
-    /* Muted Tones */
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
-
-    /* Accent - Bright Blue */
-    --accent: 213 94% 68%;
-    --accent-foreground: 0 0% 98%;
-    --accent-hover: 213 94% 62%;
-
-    /* Status Colors */
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 98%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 98%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-
-    /* UI Elements */
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 224 76% 48%;
-
-    /* AI Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(224 76% 48%) 0%, hsl(267 84% 81%) 100%);
-    --gradient-secondary: linear-gradient(135deg, hsl(213 94% 68%) 0%, hsl(224 76% 48%) 100%);
-    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(220 14% 96%) 100%);
-    --gradient-ai: linear-gradient(135deg, hsl(224 76% 48% / 0.1) 0%, hsl(267 84% 81% / 0.1) 100%);
-
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.06);
-    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -2px hsl(0 0% 0% / 0.05);
-    --shadow-glow: 0 0 20px hsl(224 76% 48% / 0.3);
-    --shadow-ai: 0 8px 32px hsl(224 76% 48% / 0.12);
-
-    /* Animations */
-    --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    /* Dark mode AI theme */
-    --background: 226 63% 8%;
-    --foreground: 0 0% 98%;
-    --card: 226 57% 12%;
-    --card-foreground: 0 0% 98%;
-    --primary: 213 94% 68%;
-    --primary-hover: 213 94% 62%;
-    --secondary: 267 84% 75%;
-    --muted: 226 57% 15%;
-    --muted-foreground: 220 9% 65%;
-    --border: 226 57% 20%;
-    --input: 226 57% 20%;
-    --sidebar-background: 226 63% 8%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 213 94% 68%;
-    --sidebar-primary-foreground: 226 63% 8%;
-    --sidebar-accent: 226 57% 15%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 226 57% 20%;
-    --sidebar-ring: 213 94% 68%;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-
   body {
-    @apply bg-background text-foreground font-['Inter',sans-serif];
+    /* FIX: Apply the global font and default text/background colors 
+      to match the 'main.pdf' dark-purple theme.
+    */
+    @apply font-['Inter',_sans-serif] bg-gray-900 text-gray-300;
+    
+    /* Prevent default browser scrollbars */
+    overflow: hidden;
+  }
+
+  /* Style for scrollbars to match the dark theme */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-900;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-600 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500;
   }
 }
 
-@layer components {
-  /* AI-Enhanced Components */
-  .inbox-card {
-    @apply bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5;
-    background: var(--gradient-subtle);
-  }
-
-  .inbox-card-ai {
-    @apply inbox-card relative overflow-hidden;
-    background: var(--gradient-ai);
-  }
-
-  .inbox-card-ai::before {
-    content: '';
-    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
-    background: var(--gradient-primary);
-  }
-
-  .inbox-card-ai:hover::before {
-    @apply opacity-10;
-  }
-
-  .ai-button {
-    @apply relative inline-flex items-center justify-center rounded-md font-medium transition-all duration-300;
-    @apply bg-primary text-primary-foreground hover:bg-primary/90;
-    @apply shadow-md hover:shadow-lg hover:-translate-y-0.5;
-    background: var(--gradient-primary);
-  }
-
-  .ai-button-secondary {
-    @apply ai-button bg-secondary text-secondary-foreground hover:bg-secondary/90;
-    background: var(--gradient-secondary);
-  }
-
-  .ai-glow {
-    @apply relative;
-    box-shadow: var(--shadow-glow);
-  }
-
-  .email-priority-high {
-    @apply border-l-4 border-destructive bg-destructive/5;
-  }
-
-  .email-priority-medium {
-    @apply border-l-4 border-warning bg-warning/5;
-  }
-
-  .email-priority-low {
-    @apply border-l-4 border-success bg-success/5;
-  }
-
-  /* Interactive Elements */
-  .hover-lift {
-    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
-  }
-
-  .hover-glow {
-    @apply transition-all duration-300 hover:shadow-glow;
-  }
-
-  .fade-in {
-    animation: fadeIn 0.6s ease-out forwards;
-  }
-
-  .slide-up {
-    animation: slideUp 0.4s ease-out forwards;
-  }
-
-  .scale-in {
-    animation: scaleIn 0.3s ease-out forwards;
-  }
-}
-
-@layer utilities {
-  .gradient-text {
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .gradient-border {
-    background: var(--gradient-primary);
-    padding: 2px;
-    border-radius: 0.75rem;
-  }
-
-  .gradient-border > * {
-    @apply bg-background rounded-lg;
-  }
-
-  .shadow-glow {
-    box-shadow: var(--shadow-glow);
-  }
-}
-
-@keyframes fadeIn {
+/* Custom animations for the landing page */
+@keyframes fade-in {
   from {
     opacity: 0;
     transform: translateY(20px);
@@ -231,33 +44,33 @@
   }
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes pulse-glow {
+@keyframes float {
   0%, 100% {
-    box-shadow: 0 0 20px hsl(224 76% 48% / 0.3);
+    transform: translateY(0px);
   }
   50% {
-    box-shadow: 0 0 30px hsl(224 76% 48% / 0.5);
+    transform: translateY(-10px);
   }
 }
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(147, 51, 234, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(147, 51, 234, 0.6);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 1s ease-out;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
