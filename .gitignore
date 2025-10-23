@@ -11,7 +11,7 @@ venv/
 env/
 
 Ignore Python bytecode and cache files
-pycache/
+__pycache__/
 *.pyc
 *.pyo
 *.pyd
@@ -40,12 +40,3 @@ Ignore macOS specific files
 
 Ignore Windows specific files
 Thumbs.db
-
-
-# Python cache files
-__pycache__/
-*.pyc
-
-# Environment variables
-.env
-*.env
