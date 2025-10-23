@@ -5,136 +5,118 @@ import {
   Archive, 
   Trash2, 
   Sparkles,
-  TrendingUp,
-  Users,
-  ShoppingBag,
-  Bell,
-  Calendar,
-  Bot,
-  Brain,
-  Zap
+  Mail,
+  LogOut,
+  FileText,
+  AlertTriangle,
+  CheckCircle,
+  ShoppingBag
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 
-const categories = [
-  { name: "Priority", icon: Zap, count: 12, color: "text-primary", bgColor: "bg-primary/10" },
-  { name: "Promotions", icon: ShoppingBag, count: 8, color: "text-accent", bgColor: "bg-accent/10" },
-  { name: "Social", icon: Users, count: 15, color: "text-secondary", bgColor: "bg-secondary/10" },
-  { name: "Updates", icon: Bell, count: 23, color: "text-muted-foreground", bgColor: "bg-muted" },
-];
+interface InboxSidebarProps {
+  onLogout: () => void;
+  activeCategory: string;
+  setActiveCategory: (category: string) => void;
+  counts: { unread: number; starred: number };
+  onCompose?: () => void;
+}
 
-const folders = [
-  { name: "Inbox", icon: Inbox, count: 58 },
-  { name: "Starred", icon: Star, count: 7 },
-  { name: "Sent", icon: Send, count: 142 },
-  { name: "Archive", icon: Archive, count: 1205 },
-  { name: "Trash", icon: Trash2, count: 23 },
-];
+export default function InboxSidebar({ onLogout, activeCategory, setActiveCategory, counts, onCompose }: InboxSidebarProps) {
+  // Standard folders from 'main.pdf'
+  const navItems = [
+    { name: 'all', label: 'All Mail', icon: Inbox, count: null },
+    { name: 'unread', label: 'Unread', icon: FileText, count: counts.unread },
+    { name: 'starred', label: 'Starred', icon: Star, count: counts.starred },
+    { name: 'sent', label: 'Sent', icon: Send, count: 0 },
+  ];
 
-export default function InboxSidebar() {
+  // AI-driven categories from 'main.pdf'
+  const aiCategories = [
+    { name: 'Urgent', icon: AlertTriangle },
+    { name: 'Important', icon: CheckCircle },
+    { name: 'Task', icon: CheckCircle },
+    { name: 'Promotion', icon: ShoppingBag },
+  ];
+
   return (
-    <aside className="w-80 bg-card border-r border-border p-6 space-y-6">
-      {/* AI Statistics */}
-      <Card className="inbox-card-ai p-4">
-        <div className="flex items-center space-x-2 mb-3">
-          <Brain className="w-5 h-5 text-primary" />
-          <h3 className="font-semibold gradient-text">AI Insights</h3>
+    <aside className="w-64 flex-shrink-0 bg-gray-900/80 backdrop-blur-sm p-4 flex flex-col border-r border-slate-700/50">
+      {/* Logo from 'main.pdf' */}
+      <div className="flex items-center gap-3 mb-8 pt-2">
+        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
+          <Mail className="w-6 h-6 text-white" />
         </div>
+        <h1 className="text-xl font-bold text-white">InboxGenie</h1>
+      </div>
+
+      <nav className="space-y-1 flex-1">
+        {/* Standard Folders */}
+        {navItems.map((item) => (
+          <button 
+            key={item.name} 
+            onClick={() => setActiveCategory(item.name)} 
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors text-left ${
+              activeCategory === item.name 
+                ? 'bg-purple-600/30 text-white' 
+                : 'text-slate-300 hover:bg-slate-800/50'
+            }`}
+          >
+            <span className="flex items-center gap-3">
+              <item.icon className="w-5 h-5" /> 
+              <span className="font-semibold">{item.label}</span>
+            </span>
+            {item.count !== null && item.count > 0 && (
+              <span className="bg-slate-700 text-slate-300 text-xs font-semibold px-2 py-0.5 rounded-full">
+                {item.count}
+              </span>
+            )}
+          </button>
+        ))}
+
+        {/* AI Categories from 'main.pdf' */}
+        <h3 className="px-3 pt-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+          Smart Categories
+        </h3>
+        {aiCategories.map((item) => (
+          <button 
+            key={item.name} 
+            onClick={() => setActiveCategory(item.name)} 
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors text-left ${
+              activeCategory === item.name 
+                ? 'bg-purple-600/30 text-white' 
+                : 'text-slate-300 hover:bg-slate-800/50'
+            }`}
+          >
+            <span className="flex items-center gap-3">
+              <item.icon className="w-5 h-5" /> 
+              <span className="font-semibold">{item.name}</span>
+            </span>
+          </button>
+        ))}
+      </nav>
+
+      {/* AI Features section from 'main.pdf' */}
+      <div className="mt-6">
+        <h3 className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+          AI Features
+        </h3>
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Emails Processed</span>
-            <span className="font-medium">1,247</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Spam Filtered</span>
-            <span className="font-medium text-success">342</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Time Saved</span>
-            <span className="font-medium text-primary">4.2 hrs</span>
-          </div>
-        </div>
-      </Card>
-
-      {/* Smart Categories */}
-      <div>
-        <div className="flex items-center space-x-2 mb-3">
-          <Sparkles className="w-4 h-4 text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">Smart Categories</h3>
-        </div>
-        <div className="space-y-1">
-          {categories.map((category) => (
-            <Button
-              key={category.name}
-              variant="ghost"
-              className="w-full justify-between hover:bg-muted/50 transition-all duration-300 hover:scale-[1.02]"
-            >
-              <div className="flex items-center space-x-3">
-                <div className={`p-1.5 rounded-md ${category.bgColor}`}>
-                  <category.icon className={`w-4 h-4 ${category.color}`} />
-                </div>
-                <span className="text-sm font-medium">{category.name}</span>
-              </div>
-              <Badge variant="secondary" className="bg-muted text-muted-foreground">
-                {category.count}
-              </Badge>
-            </Button>
-          ))}
+          <button 
+            onClick={onCompose}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-lg hover:scale-105 transition-transform"
+          >
+            <Sparkles className="w-5 h-5"/> Smart Compose
+          </button>
         </div>
       </div>
 
-      {/* Traditional Folders */}
-      <div>
-        <h3 className="text-sm font-semibold text-foreground mb-3">Folders</h3>
-        <div className="space-y-1">
-          {folders.map((folder) => (
-            <Button
-              key={folder.name}
-              variant="ghost"
-              className="w-full justify-between hover:bg-muted/50 transition-all duration-300"
-            >
-              <div className="flex items-center space-x-3">
-                <folder.icon className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm">{folder.name}</span>
-              </div>
-              <Badge variant="outline" className="text-xs">
-                {folder.count}
-              </Badge>
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {/* AI Features */}
-      <Card className="inbox-card p-4 space-y-3">
-        <div className="flex items-center space-x-2">
-          <Bot className="w-4 h-4 text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">AI Features</h3>
-        </div>
-        
-        <Button className="ai-button w-full justify-start" size="sm">
-          <Sparkles className="w-4 h-4 mr-2" />
-          Smart Compose
-        </Button>
-        
-        <Button className="ai-button-secondary w-full justify-start" size="sm">
-          <TrendingUp className="w-4 h-4 mr-2" />
-          Email Analytics
-        </Button>
-        
-        <Button variant="outline" className="w-full justify-start hover-lift" size="sm">
-          <Calendar className="w-4 h-4 mr-2" />
-          Schedule AI Review
-        </Button>
-      </Card>
-
-      {/* Quick Stats */}
-      <div className="text-center p-4 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg">
-        <p className="text-xs text-muted-foreground mb-1">Today's Productivity</p>
-        <p className="text-2xl font-bold gradient-text">94%</p>
-        <p className="text-xs text-muted-foreground">AI Efficiency Score</p>
+      {/* Logout button from 'main.pdf' */}
+      <div className="mt-6">
+        <button 
+          onClick={onLogout} 
+          className="w-full bg-red-600/80 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+        >
+          <LogOut className="w-5 h-5" /> Logout
+        </button>
       </div>
     </aside>
   );

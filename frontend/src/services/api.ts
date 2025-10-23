@@ -1,38 +1,48 @@
 import axios from "axios";
 
-const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:8000";
+// FIX: Hardcoded the backend URL to resolve the 'import.meta' build warning.
+const API_BASE_URL = "http://localhost:8000";
 
+// Create a reusable Axios instance for API calls
 const api = axios.create({
-  baseURL: API_BASE,
+  baseURL: API_BASE_URL,
   withCredentials: true,
 });
 
-export async function listEmails() {
-  const res = await api.get("/gmail/list");
-  return res.data;
+/**
+ * Constructs the full URL for the Google login endpoint.
+ * This is used to initiate the OAuth flow.
+ */
+export function getGoogleLoginUrl(): string {
+  return `${API_BASE_URL}/auth/google/login`;
 }
 
-export async function fetchInbox() {
-  const res = await api.get("/gmail/fetch");
-  return res.data;
+/**
+ * Fetches the user's emails from the backend's /gmail/inbox endpoint.
+ */
+export async function fetchEmails(): Promise<any[]> {
+  try {
+    const response = await api.get("/gmail/inbox");
+    // The backend returns an object like { emails: [...] }, so we extract the array.
+    return response.data.emails || [];
+  } catch (error) {
+    console.error("Error fetching emails:", error);
+    // On failure, return an empty array to prevent the UI from crashing.
+    return [];
+  }
 }
 
-export async function classifyText(text: string) {
-  const res = await api.post("/ai/classify", { text });
-  return res.data;
-}
-
-export async function summarizeText(text: string) {
-  const res = await api.post("/ai/summarize", { text });
-  return res.data;
-}
-
-export async function rewriteText(text: string, tone: string) {
-  const res = await api.post("/ai/rewrite", { text, tone });
-  return res.data;
-}
-
-// auth endpoints
-export function getGoogleLoginUrl() {
-  return `${API_BASE}/auth/google/login`;
+// --- TYPE DEFINITIONS ---
+export interface Email {
+  id: string; 
+  sender: string;
+  subject: string;
+  snippet: string;
+  content?: string; // Full content
+  category: 'Urgent' | 'Task' | 'Important' | 'Promotion' | 'General';
+  status: 'inbox' | 'archived' | 'trashed';
+  isStarred: boolean;
+  date: string;
+  isRead: boolean;
+  aiSummary?: string;
 }

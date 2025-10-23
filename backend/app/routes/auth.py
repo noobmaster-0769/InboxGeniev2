@@ -1,4 +1,3 @@
-# backend/app/routes/auth.py
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
@@ -9,10 +8,11 @@ from app.services.gmail_service import exchange_code_and_store_tokens
 
 router = APIRouter()
 
+# CORRECTED: Using full, explicit scope URLs to prevent mismatch errors.
 SCOPES = [
     "openid",
-    "email",
-    "profile",
+    "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/userinfo.profile",
     "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/gmail.send",
 ]
@@ -39,7 +39,10 @@ def google_callback(request: Request, db: Session = Depends(get_db)):
     code = request.query_params.get("code")
     if not code:
         raise HTTPException(status_code=400, detail="Missing code")
-    # exchange code and store encrypted tokens + user
+    
+    # Exchange code and store encrypted tokens + user
     user_info = exchange_code_and_store_tokens(code, db=db)
-    # redirect to frontend with status
+    
+    # CORRECTED: Redirect to the frontend address (port 8080)
     return RedirectResponse("http://localhost:8080/?auth=success")
+
