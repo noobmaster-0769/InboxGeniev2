@@ -42,3 +42,10 @@ Ignore Windows specific files
 Thumbs.db
 
 
+# Python cache files
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+*.env
