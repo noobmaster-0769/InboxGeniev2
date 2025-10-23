@@ -26,6 +26,7 @@ interface EmailCardProps {
   onToggleStar: (id: string) => void;
   onMoveToInbox: (id: string) => void;
   onReply: (email: Email) => void;
+  isStarred: boolean;
 }
 
 // Define category colors for the labels
@@ -37,7 +38,7 @@ const categoryStyles = {
     General: 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
 };
 
-export default function EmailCard({ email, isExpanded, onClick, onArchive, onTrash, onToggleStar, onMoveToInbox, onReply }: EmailCardProps) {
+export default function EmailCard({ email, isExpanded, onClick, onArchive, onTrash, onToggleStar, onMoveToInbox, onReply, isStarred }: EmailCardProps) {
   const [showSummary, setShowSummary] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -58,7 +59,7 @@ export default function EmailCard({ email, isExpanded, onClick, onArchive, onTra
             <div className="flex-shrink-0 mr-4">
                 <button onClick={(e) => { e.stopPropagation(); onToggleStar(email.id); }}>
                     <Star className={`h-5 w-5 transition-colors duration-200 ${
-                      email.isStarred ? 'text-yellow-400 fill-current' : 'text-gray-500 hover:text-yellow-400'
+                      isStarred ? 'text-yellow-400 fill-current' : 'text-gray-500 hover:text-yellow-400'
                     }`} />
                 </button>
             </div>

@@ -34,6 +34,7 @@ function Dashboard({ onLogout }: DashboardProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedEmailId, setExpandedEmailId] = useState<string | null>(null);
   const [replyToEmail, setReplyToEmail] = useState<any>(null);
+  const [starredEmails, setStarredEmails] = useState<Set<string>>(new Set());
 
   const loadEmails = async () => {
     setIsLoading(true);
@@ -73,7 +74,7 @@ function Dashboard({ onLogout }: DashboardProps) {
 
     if (selectedTab !== "all") {
       if (selectedTab === "unread") tempEmails = tempEmails.filter(e => !e.isRead);
-      else if (selectedTab === "starred") tempEmails = tempEmails.filter(e => e.isStarred);
+      else if (selectedTab === "starred") tempEmails = tempEmails.filter(e => starredEmails.has(e.id));
       else tempEmails = tempEmails.filter(e => e.category === selectedTab);
     }
     
@@ -85,7 +86,7 @@ function Dashboard({ onLogout }: DashboardProps) {
     }
 
     return tempEmails;
-  }, [emails, selectedTab, searchQuery]);
+  }, [emails, selectedTab, searchQuery, starredEmails]);
 
   const handleEmailClick = (id: string) => {
     setExpandedEmailId(prevId => prevId === id ? null : id);
@@ -106,9 +107,21 @@ function Dashboard({ onLogout }: DashboardProps) {
     setReplyToEmail(null);
   };
 
+  const handleToggleStar = (emailId: string) => {
+    setStarredEmails(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(emailId)) {
+        newSet.delete(emailId);
+      } else {
+        newSet.add(emailId);
+      }
+      return newSet;
+    });
+  };
+
   const counts = {
     unread: emails.filter(e => !e.isRead).length,
-    starred: emails.filter(e => e.isStarred).length,
+    starred: starredEmails.size,
   };
 
   return (
@@ -171,9 +184,10 @@ function Dashboard({ onLogout }: DashboardProps) {
                 onClick={handleEmailClick}
                 onArchive={() => {}}
                 onTrash={() => {}}
-                onToggleStar={() => {}}
+                onToggleStar={() => handleToggleStar(email.id)}
                 onMoveToInbox={() => {}}
                 onReply={() => handleReply(email)}
+                isStarred={starredEmails.has(email.id)}
               />
             ))
           )}

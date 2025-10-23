@@ -11,10 +11,19 @@
     /* FIX: Apply the global font and default text/background colors 
       to match the 'main.pdf' dark-purple theme.
     */
-    @apply font-['Inter',_sans-serif] bg-gray-900 text-gray-300;
+    @apply font-['Inter',_sans-serif] text-gray-300;
+    /* Match app gradient so overflow areas render consistently */
+    background: linear-gradient(180deg, #1e1b4b 0%, #4c1d95 100%);
+    min-height: 150vh;
     
-    /* Prevent default browser scrollbars */
-    overflow: hidden;
+    /* Allow vertical and horizontal scrolling if needed */
+    overflow-y: auto;
+    overflow-x: auto;
+  }
+
+  /* Ensure the app has enough minimum width so right-side date column doesn't clip */
+  #root {
+    min-width: 1200px; /* adjust if needed; enables horizontal scroll below this width */
   }
 
   /* Style for scrollbars to match the dark theme */
