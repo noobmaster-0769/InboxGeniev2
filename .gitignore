@@ -39,4 +39,4 @@ Ignore macOS specific files
 .DS_Store
 
 Ignore Windows specific files
-Thumbs.db
+Thumbs.dbbackend/.env
