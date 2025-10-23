@@ -27,7 +27,11 @@ export async function fetchEmails(): Promise<any[]> {
     return response.data.emails || [];
   } catch (error) {
     console.error("Error fetching emails:", error);
-    // On failure, return an empty array to prevent the UI from crashing.
+    // Re-throw authentication errors so the app can handle them properly
+    if (error.response?.status === 404 || error.response?.data?.detail?.includes("No user found")) {
+      throw new Error("User not authenticated");
+    }
+    // For other errors, return empty array to prevent UI crashes
     return [];
   }
 }

@@ -19,6 +19,9 @@ SCOPES = [
 
 @router.get("/google/login")
 def google_login():
+    # Use the configured redirect URI from environment
+    print(f"Using redirect URI: {GOOGLE_REDIRECT_URI}")
+    
     flow = Flow.from_client_config(
         {
             "web": {
