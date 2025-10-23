@@ -120,6 +120,7 @@ const LoginPage: React.FC<{ onLogin: () => void; loading: boolean; }> = ({ onLog
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   const handleLogin = async () => {
     setIsLoading(true);
@@ -133,28 +134,59 @@ function App() {
   };
 
   const handleLogout = () => {
+    // Clear authentication state
     setIsAuthenticated(false);
+    setIsCheckingAuth(false);
     // Clear any stored tokens/session data
     localStorage.removeItem('auth_token');
+    // Force reload to show landing page
+    window.location.reload();
   };
 
-  // Check if user is already authenticated (you might want to verify this with the backend)
+  // Check if user is already authenticated and handle OAuth callback
   useEffect(() => {
     const checkAuth = async () => {
-      try {
-        // Try to fetch emails to check if user is authenticated
-        const emails = await fetchEmails();
-        if (emails.length >= 0) { // Even empty array means authenticated
-          setIsAuthenticated(true);
-        }
-      } catch (error) {
-        // Not authenticated
+      // Check if this is an OAuth callback
+      const urlParams = new URLSearchParams(window.location.search);
+      const authSuccess = urlParams.get('auth');
+      
+      if (authSuccess === 'success') {
+        // OAuth callback successful, user is now authenticated
+        localStorage.setItem('auth_token', 'authenticated');
+        setIsAuthenticated(true);
+        setIsCheckingAuth(false);
+        // Clean up the URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+      
+      // Check if user has a valid auth token
+      const hasAuthToken = localStorage.getItem('auth_token');
+      if (hasAuthToken) {
+        // User has token, consider them authenticated
+        setIsAuthenticated(true);
+      } else {
+        // No auth token, show landing page
         setIsAuthenticated(false);
       }
+      
+      setIsCheckingAuth(false);
     };
     
     checkAuth();
   }, []);
+
+  // Show loading screen while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#1e1b4b] to-[#4c1d95] flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-lg">Loading InboxGenie...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <LoginPage onLogin={handleLogin} loading={isLoading} />;
