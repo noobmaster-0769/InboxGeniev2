@@ -43,25 +43,34 @@ const LoginPage: React.FC<{ onLogin: () => void; loading: boolean; }> = ({ onLog
         </div>
 
         <div className="relative z-10 text-center px-4">
-            {/* Aesthetic Title with subtle glowing envelope behind */}
+            {/* Aesthetic Title with enhanced floating envelope behind */}
             <div className="relative flex items-center justify-center mb-6">
-                {/* Decorative envelope glow behind the title */}
+                {/* Enhanced floating envelope - larger, shifted, more visible */}
                 <svg
                     aria-hidden="true"
-                    className="pointer-events-none absolute -top-6 md:-top-8 w-44 h-44 md:w-56 md:h-56 opacity-50 blur-sm animate-float"
+                    className="pointer-events-none absolute -top-12 md:-top-16 -left-8 md:-left-12 w-64 h-64 md:w-80 md:h-80 opacity-70 animate-float"
                     viewBox="0 0 200 200"
                 >
                     <defs>
                         <radialGradient id="gradGlow" cx="50%" cy="50%" r="50%">
-                            <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.9" />
-                            <stop offset="60%" stopColor="#7c3aed" stopOpacity="0.35" />
-                            <stop offset="100%" stopColor="#4c1d95" stopOpacity="0" />
+                            <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.8" />
+                            <stop offset="40%" stopColor="#7c3aed" stopOpacity="0.5" />
+                            <stop offset="80%" stopColor="#4c1d95" stopOpacity="0.2" />
+                            <stop offset="100%" stopColor="#1e1b4b" stopOpacity="0" />
                         </radialGradient>
+                        <filter id="softGlow">
+                            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                            <feMerge> 
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
                     </defs>
                     <circle cx="100" cy="100" r="90" fill="url(#gradGlow)" />
-                    <g transform="translate(40,60)" fill="none" stroke="#c4b5fd" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="0" y="0" width="120" height="80" rx="14" ry="14" opacity="0.85" />
-                        <path d="M4 10 L60 52 L116 10" opacity="0.95" />
+                    <g transform="translate(30,50)" fill="none" stroke="#c4b5fd" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" filter="url(#softGlow)">
+                        <rect x="0" y="0" width="140" height="100" rx="16" ry="16" opacity="0.9" />
+                        <path d="M8 12 L70 62 L132 12" opacity="0.95" strokeWidth="5" />
+                        <circle cx="70" cy="50" r="3" fill="#c4b5fd" opacity="0.8" />
                     </g>
                 </svg>
 

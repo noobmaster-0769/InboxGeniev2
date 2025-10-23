@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Star, MoreHorizontal, Sparkles, Archive, Trash2, Inbox, ChevronDown } from 'lucide-react';
+import { Star, MoreHorizontal, Sparkles, Archive, Trash2, Inbox, ChevronDown, Reply } from 'lucide-react';
 
 // Define the structure of an email object for TypeScript
 export interface Email {
@@ -25,6 +25,7 @@ interface EmailCardProps {
   onTrash: (id: string) => void;
   onToggleStar: (id: string) => void;
   onMoveToInbox: (id: string) => void;
+  onReply: (email: Email) => void;
 }
 
 // Define category colors for the labels
@@ -36,7 +37,7 @@ const categoryStyles = {
     General: 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
 };
 
-export default function EmailCard({ email, isExpanded, onClick, onArchive, onTrash, onToggleStar, onMoveToInbox }: EmailCardProps) {
+export default function EmailCard({ email, isExpanded, onClick, onArchive, onTrash, onToggleStar, onMoveToInbox, onReply }: EmailCardProps) {
   const [showSummary, setShowSummary] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -91,6 +92,12 @@ export default function EmailCard({ email, isExpanded, onClick, onArchive, onTra
                         >
                             <Sparkles className="w-4 h-4" /> 
                             {showSummary ? "Hide AI Summary" : "Show AI Summary"}
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); onReply(email); }} 
+                          className="flex items-center gap-2 text-xs font-semibold text-blue-400 hover:text-blue-300 bg-blue-500/20 hover:bg-blue-500/30 px-3 py-1.5 rounded-md transition-colors"
+                        >
+                          <Reply className="w-4 h-4" /> Reply
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); onArchive(email.id); }} 

@@ -18,9 +18,10 @@ interface InboxSidebarProps {
   activeCategory: string;
   setActiveCategory: (category: string) => void;
   counts: { unread: number; starred: number };
+  onCompose?: () => void;
 }
 
-export default function InboxSidebar({ onLogout, activeCategory, setActiveCategory, counts }: InboxSidebarProps) {
+export default function InboxSidebar({ onLogout, activeCategory, setActiveCategory, counts, onCompose }: InboxSidebarProps) {
   // Standard folders from 'main.pdf'
   const navItems = [
     { name: 'all', label: 'All Mail', icon: Inbox, count: null },
@@ -99,12 +100,12 @@ export default function InboxSidebar({ onLogout, activeCategory, setActiveCatego
           AI Features
         </h3>
         <div className="space-y-2">
-          <a 
-            href="#" 
-            className="flex items-center gap-3 px-3 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-lg hover:scale-105 transition-transform"
+          <button 
+            onClick={onCompose}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-lg hover:scale-105 transition-transform"
           >
             <Sparkles className="w-5 h-5"/> Smart Compose
-          </a>
+          </button>
         </div>
       </div>
 

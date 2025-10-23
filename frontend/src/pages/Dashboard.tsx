@@ -33,6 +33,7 @@ function Dashboard({ onLogout }: DashboardProps) {
   const [showComposer, setShowComposer] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedEmailId, setExpandedEmailId] = useState<string | null>(null);
+  const [replyToEmail, setReplyToEmail] = useState<any>(null);
 
   const loadEmails = async () => {
     setIsLoading(true);
@@ -90,6 +91,21 @@ function Dashboard({ onLogout }: DashboardProps) {
     setExpandedEmailId(prevId => prevId === id ? null : id);
   };
 
+  const handleReply = (email: any) => {
+    setReplyToEmail(email);
+    setShowComposer(true);
+  };
+
+  const handleCompose = () => {
+    setReplyToEmail(null);
+    setShowComposer(true);
+  };
+
+  const handleCloseComposer = () => {
+    setShowComposer(false);
+    setReplyToEmail(null);
+  };
+
   const counts = {
     unread: emails.filter(e => !e.isRead).length,
     starred: emails.filter(e => e.isStarred).length,
@@ -97,7 +113,7 @@ function Dashboard({ onLogout }: DashboardProps) {
 
   return (
     <div className="flex h-screen bg-gradient-to-b from-[#1e1b4b] to-[#4c1d95] font-['Inter',_sans-serif] text-gray-200">
-      <InboxSidebar onLogout={onLogout} activeCategory={selectedTab} setActiveCategory={setSelectedTab} counts={counts} />
+      <InboxSidebar onLogout={onLogout} activeCategory={selectedTab} setActiveCategory={setSelectedTab} counts={counts} onCompose={handleCompose} />
 
       <main className="flex-1 flex flex-col">
         {/* Header with search */}
@@ -123,6 +139,18 @@ function Dashboard({ onLogout }: DashboardProps) {
           </Button>
         </header>
 
+        {/* AI Composer */}
+        {showComposer && (
+          <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <AIComposer 
+                replyToEmail={replyToEmail}
+                onClose={handleCloseComposer}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Email List Area */}
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
@@ -145,6 +173,7 @@ function Dashboard({ onLogout }: DashboardProps) {
                 onTrash={() => {}}
                 onToggleStar={() => {}}
                 onMoveToInbox={() => {}}
+                onReply={() => handleReply(email)}
               />
             ))
           )}
