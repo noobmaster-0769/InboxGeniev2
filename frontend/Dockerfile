@@ -1,24 +1,19 @@
-# Stage 1: Build the React application
-FROM node:18-alpine AS build
-
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm install
-
-COPY . .
-RUN npm run build
-
-# Stage 2: Serve the application with a lightweight server
+# Frontend Dockerfile for development
 FROM node:18-alpine
 
 WORKDIR /app
 
-# Install a simple static server
-RUN npm install -g serve
+# Copy package files
+COPY package.json package-lock.json ./
 
-COPY --from=build /app/dist .
+# Install dependencies
+RUN npm install
 
-EXPOSE 5173
+# Copy source code
+COPY . .
 
-CMD ["serve", "-s", ".", "-l", "5173"]
+# Expose port 8080
+EXPOSE 8080
+
+# Start development server
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "8080"]

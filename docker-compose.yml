@@ -12,6 +12,8 @@ services:
 
   redis:
     image: redis:6-alpine
+    ports:
+      - "6379:6379"
 
   backend:
     build: .
@@ -39,6 +41,20 @@ services:
     depends_on:
       - db
       - redis
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:

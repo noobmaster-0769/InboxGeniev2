@@ -93,6 +93,11 @@ class GmailService:
             subject = headers.get("Subject", "")
             sender = headers.get("From", "")
             snippet = msg.get("snippet", "")
+            
+            # Check if email is read based on Gmail labels
+            label_ids = msg.get("labelIds", [])
+            is_read = "UNREAD" not in label_ids
+            
             email_row = Email(
                 message_id=mid,
                 user_id=user.id,
@@ -100,6 +105,8 @@ class GmailService:
                 subject=subject,
                 snippet=snippet,
                 labels="INBOX",
+                is_read=is_read,
+                status="inbox"
             )
             db.add(email_row)
             saved.append(email_row)
