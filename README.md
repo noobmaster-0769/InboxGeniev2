@@ -1,271 +1,293 @@
-# InboxGenie - AI-Powered Email Management Dashboard
+# 🧞‍♂️ InboxGenie - AI-Powered Email Assistant
 
-An intelligent email management system that uses AI to automatically categorize emails, provide smart summaries, and assist with email composition. Built with FastAPI backend and React frontend.
+**Transform Your Email Experience with AI Intelligence**
+
+InboxGenie is a full-stack AI-powered email augmentation dashboard that acts as an intelligent layer on top of your Gmail account. It provides AI-driven email classification, smart composition, and summarization to help you manage your inbox more efficiently.
 
 ## ✨ Features
 
-### 🤖 AI-Powered Features
-- **Smart Email Classification**: Automatically categorizes emails (Urgent, Important, Task, Promotion, General)
-- **AI Email Summaries**: One-click AI-generated summaries for long emails
-- **Smart Compose**: AI-assisted email composition with tone selection (Professional, Casual, Friendly, Formal)
-- **Auto Reply**: Intelligent auto-reply generation
-- **Smart Reply**: Context-aware reply suggestions
+### Core Features
+- 🔐 **Google OAuth 2.0 Login** - Secure authentication with Gmail
+- 📧 **Real Gmail Integration** - Fetch and display your actual emails
+- 🔒 **Secure Token Management** - Encrypted storage of access tokens
+- 🗄️ **PostgreSQL Database** - Persistent storage with SQLAlchemy ORM
+- 🐳 **Dockerized Deployment** - Complete containerization
 
-### 🎨 Modern UI
-- **Violet-themed Design**: Beautiful gradient backgrounds and animations
-- **Animated Landing Page**: Floating particles and glowing effects
-- **Responsive Design**: Works on desktop and mobile
-- **Email Expansion**: Click to expand emails with smooth animations
-- **Real-time Search**: Instant email filtering
+### AI Features
+- 🤖 **AI Email Classification** - Automatically categorize emails (Important, Promotion, General, Spam)
+- 📝 **AI Email Summarization** - Generate concise 1-2 sentence summaries
+- ✍️ **AI Tone Rewriting** - Rewrite emails in different tones (Professional, Casual, Friendly, Formal)
+- 🤖 **AI Auto-Reply Generation** - Context-aware automatic replies
+- ⚡ **AI Smart Reply Suggestions** - Multiple intelligent reply options
+- ⚙️ **Async AI Processing** - Background processing with Celery workers
 
-### 🔐 Authentication
-- **Google OAuth 2.0**: Secure login with Google accounts
-- **Session Management**: Persistent authentication
-- **Secure Token Storage**: Encrypted token handling
+### Email Management
+- ⭐ **Star Functionality** - Persistent starring with sidebar count
+- 📁 **Archive/Delete/Move** - Full email management actions
+- ✅ **Mark as Read** - Email status management
+- 🔍 **Search & Filter** - Real-time email filtering
+- 📱 **Responsive Design** - Works on all screen sizes
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Docker & Docker Compose
+- Docker and Docker Compose
 - Google Cloud Console account
-- OpenAI API key (for AI features)
+- OpenAI API key
 
-### 1. Clone the Repository
+### 1. Environment Setup
+
+Create your environment file:
 ```bash
-git clone <your-repo-url>
-cd InboxGeniev2
+# Copy the example file
+cp backend/env.example backend/.env
+
+# Edit the file with your values
+nano backend/.env
 ```
 
-### 2. Backend Setup
-
-#### Create Environment File
-```bash
-cd backend
-cp .env.example .env
-```
-
-#### Configure Environment Variables
-Edit `backend/.env` with your credentials:
-
+Fill in your `.env` file:
 ```env
-# Database
-DATABASE_URL=postgresql://postgres:password@db:5432/inboxgenie
+# Database Configuration
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=password
+POSTGRES_DB=inboxgenie
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
 
-# Redis
-REDIS_URL=redis://redis:6379
+# Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+FERNET_KEY=your_generated_fernet_key_here
 
-# Google OAuth (Get from Google Cloud Console)
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
+# Google OAuth (from Google Cloud Console)
+GOOGLE_CLIENT_ID=your_google_client_id_here
+GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
 
-# OpenAI API (Get from OpenAI)
-OPENAI_API_KEY=your_openai_api_key
+# AI Configuration
+AI_PROVIDER=openai
+AI_API_KEY=your_openai_api_key_here
 
-# Fernet Key (Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
-FERNET_KEY=your_fernet_key
-
-# JWT Secret
-JWT_SECRET_KEY=your_jwt_secret_key
+# Celery/Redis
+CELERY_BROKER_URL=redis://redis:6379/0
+CELERY_RESULT_BACKEND=redis://redis:6379/0
 ```
 
-#### Generate Fernet Key
+### 2. Google Cloud Console Setup
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing one
+3. Enable **Gmail API**
+4. Go to **Credentials** → **Create Credentials** → **OAuth 2.0 Client IDs**
+5. Set **Application type** to "Web application"
+6. Add **Authorized redirect URIs**: `http://localhost:8000/auth/google/callback`
+7. Copy **Client ID** and **Client Secret** to your `.env` file
+
+### 3. OpenAI API Key
+
+1. Get your API key from [OpenAI Platform](https://platform.openai.com/)
+2. Add it to your `.env` file as `AI_API_KEY`
+
+### 4. Generate Fernet Key
+
 ```bash
 python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ```
 
-### 3. Google Cloud Console Setup
+### 5. Start the Application
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing one
-3. Enable Gmail API
-4. Go to "Credentials" → "Create Credentials" → "OAuth 2.0 Client ID"
-5. Set **Authorized redirect URIs** to: `http://localhost:8000/auth/google/callback`
-6. Copy Client ID and Client Secret to your `.env` file
-
-### 4. OpenAI Setup
-
-1. Go to [OpenAI Platform](https://platform.openai.com/)
-2. Create an API key
-3. Add the key to your `.env` file
-
-### 5. Run the Application
-
-#### Using Docker Compose (Recommended)
+**Option A: Using the startup script (Recommended)**
 ```bash
-# From project root
+./start.sh
+```
+
+**Option B: Manual Docker Compose**
+```bash
 docker-compose up --build
 ```
 
-#### Manual Setup
+**Option C: Manual setup**
 ```bash
-# Backend
+# Terminal 1: Backend
 cd backend
 pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-# Frontend (in new terminal)
+# Terminal 2: Frontend
 cd frontend
 npm install
 npm run dev
+
+# Terminal 3: Celery Worker
+cd backend
+celery -A celery_app.celery_app worker --loglevel=info
+
+# Terminal 4: Redis (if not using Docker)
+redis-server
 ```
 
-### 6. Access the Application
+## 🌐 Access Points
 
-- **Frontend**: http://localhost:5173
+- **Frontend**: http://localhost:8080
 - **Backend API**: http://localhost:8000
 - **API Documentation**: http://localhost:8000/docs
+- **Database**: localhost:5432 (postgres/password)
 
-## 🏗️ Project Structure
+## 🏗️ Architecture
 
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   Backend       │    │   AI Services   │
+│   (React/Vite)  │◄──►│   (FastAPI)     │◄──►│   (OpenAI)      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Docker        │    │   PostgreSQL    │    │   Celery        │
+│   Container     │    │   Database      │    │   Workers       │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                │                       │
+                                │                       │
+                                ▼                       ▼
+                       ┌─────────────────┐    ┌─────────────────┐
+                       │   Redis         │    │   Gmail API     │
+                       │   Message       │    │   Integration   │
+                       │   Broker        │    │                 │
+                       └─────────────────┘    └─────────────────┘
+```
+
+## 🔧 API Endpoints
+
+### Authentication
+- `GET /auth/google/login` - Initiate Google OAuth
+- `GET /auth/google/callback` - Handle OAuth callback
+
+### Gmail Integration
+- `GET /gmail/inbox` - Fetch user's emails
+- `POST /gmail/archive/{email_id}` - Archive email
+- `POST /gmail/trash/{email_id}` - Move to trash
+- `POST /gmail/inbox/{email_id}` - Move to inbox
+- `POST /gmail/mark-read/{email_id}` - Mark as read
+
+### AI Services
+- `POST /ai/classify` - Classify email content
+- `POST /ai/summarize` - Generate email summary
+- `POST /ai/rewrite` - Rewrite email tone
+- `POST /ai/auto-reply` - Generate auto-reply
+- `POST /ai/smart-reply` - Generate smart replies
+- `POST /ai/process-emails` - Process emails asynchronously
+- `GET /ai/health` - Check AI service status
+
+## 🛠️ Development
+
+### Project Structure
 ```
 InboxGeniev2/
-├── backend/                 # FastAPI backend
+├── backend/
 │   ├── app/
-│   │   ├── routes/         # API endpoints
-│   │   ├── services/       # Business logic
-│   │   └── models.py       # Database models
-│   ├── requirements.txt
-│   └── .env               # Environment variables
-├── frontend/              # React frontend
+│   │   ├── routes/          # API endpoints
+│   │   ├── services/        # Business logic
+│   │   ├── models.py       # Database models
+│   │   ├── database.py     # Database connection
+│   │   └── config.py       # Configuration
+│   ├── celery_app.py       # Celery tasks
+│   └── requirements.txt    # Python dependencies
+├── frontend/
 │   ├── src/
-│   │   ├── components/    # UI components
-│   │   ├── pages/         # Page components
-│   │   └── services/      # API services
-│   └── package.json
-├── docker-compose.yml     # Docker orchestration
-└── README.md
+│   │   ├── components/     # React components
+│   │   ├── pages/          # Page components
+│   │   ├── services/       # API services
+│   │   └── hooks/          # Custom hooks
+│   └── package.json        # Node dependencies
+├── docker-compose.yml      # Docker orchestration
+└── Dockerfile             # Backend container
 ```
 
-## 🔧 Configuration
+### Database Schema
+- **users**: User profiles and encrypted tokens
+- **emails**: Email data with AI metadata
+- **ai_classification_enc**: Encrypted AI classification results
+- **ai_summary_enc**: Encrypted AI summaries
 
-### Environment Variables
+## 🔒 Security Features
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `DATABASE_URL` | PostgreSQL connection string | Yes |
-| `REDIS_URL` | Redis connection string | Yes |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID | Yes |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | Yes |
-| `OPENAI_API_KEY` | OpenAI API key for AI features | Yes |
-| `FERNET_KEY` | Encryption key for tokens | Yes |
-| `JWT_SECRET_KEY` | JWT signing secret | Yes |
-
-### Google OAuth Scopes
-The application requests these Gmail permissions:
-- `https://www.googleapis.com/auth/gmail.readonly`
-- `https://www.googleapis.com/auth/gmail.send`
-- `https://www.googleapis.com/auth/userinfo.email`
-
-## 🎯 Usage
-
-### 1. Login
-- Click "Login" on the landing page
-- Authorize with your Google account
-- Grant Gmail permissions
-
-### 2. Email Management
-- **View Emails**: Browse your inbox with AI categorization
-- **Search**: Use the search bar to find specific emails
-- **Categories**: Filter by Urgent, Important, Task, Promotion
-- **Expand**: Click emails to see full content
-
-### 3. AI Features
-- **Smart Compose**: Click "Smart Compose" in sidebar
-- **Reply**: Click "Reply" on any email
-- **AI Summary**: Click "Show AI Summary" on expanded emails
-- **Tone Selection**: Choose Professional, Casual, Friendly, or Formal
-
-### 4. Email Actions
-- **Star**: Mark important emails
-- **Archive**: Move emails to archive
-- **Delete**: Move emails to trash
-- **Reply**: Start AI-powered reply
+- **Encrypted Token Storage**: All OAuth tokens encrypted with Fernet
+- **Secure AI Processing**: AI results encrypted before database storage
+- **CORS Protection**: Configured for specific origins
+- **Environment Variables**: Sensitive data in environment files
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
-1. **"Could not translate host name 'db'"**
-   - Make sure you're running with Docker Compose
-   - Check if all services are running: `docker-compose ps`
+1. **"No user found in database"**
+   - Make sure you've completed Google OAuth login first
+   - Check if the user was created in the database
 
-2. **Google OAuth errors**
-   - Verify redirect URI in Google Cloud Console
-   - Check Client ID and Secret in `.env`
-   - Ensure Gmail API is enabled
+2. **"OpenAI API error"**
+   - Verify your OpenAI API key is correct
+   - Check if you have sufficient API credits
 
-3. **OpenAI API errors**
-   - Verify API key is correct
-   - Check API usage limits
-   - Ensure sufficient credits
+3. **"Google OAuth error"**
+   - Verify redirect URI matches exactly: `http://localhost:8000/auth/google/callback`
+   - Check if Gmail API is enabled in Google Cloud Console
 
-4. **Database connection issues**
-   - Check PostgreSQL is running
-   - Verify DATABASE_URL format
-   - Check database permissions
+4. **"Database connection error"**
+   - Ensure PostgreSQL is running
+   - Check database credentials in `.env` file
 
-### Debug Commands
+5. **"Celery worker not starting"**
+   - Ensure Redis is running
+   - Check Redis connection URL
+
+### Logs
 ```bash
-# Check Docker services
-docker-compose ps
+# View all service logs
+docker-compose logs -f
 
-# View logs
+# View specific service logs
 docker-compose logs -f backend
+docker-compose logs -f worker
 docker-compose logs -f frontend
-
-# Restart services
-docker-compose restart
-
-# Rebuild containers
-docker-compose up --build --force-recreate
 ```
 
-## 🔒 Security Notes
+## 📈 Performance
 
-- Never commit `.env` files to version control
-- Use strong, unique Fernet keys
-- Rotate API keys regularly
-- Monitor API usage and costs
-- Use HTTPS in production
+- **Async Processing**: AI tasks run in background with Celery
+- **Database Optimization**: Indexed fields for fast queries
+- **Caching**: Redis for task result caching
+- **Containerization**: Isolated services for scalability
 
-## 📝 Development
+## 🚀 Production Deployment
 
-### Adding New Features
-1. Backend: Add routes in `app/routes/`
-2. Frontend: Add components in `src/components/`
-3. Update API service in `src/services/api.ts`
+For production deployment:
 
-### Testing
-```bash
-# Backend tests
-cd backend
-pytest
+1. **Environment Variables**: Use secure environment variable management
+2. **Database**: Use managed PostgreSQL service
+3. **Redis**: Use managed Redis service
+4. **SSL**: Enable HTTPS for all endpoints
+5. **Monitoring**: Add logging and monitoring services
+6. **Scaling**: Use multiple Celery workers for AI processing
 
-# Frontend tests
-cd frontend
-npm test
-```
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test thoroughly
+4. Add tests if applicable
 5. Submit a pull request
 
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🆘 Support
+## 📞 Support
 
 For issues and questions:
-1. Check the troubleshooting section
-2. Review the API documentation at `/docs`
-3. Open an issue on GitHub
+- Create an issue in the GitHub repository
+- Check the troubleshooting section above
+- Review the API documentation at `/docs`
 
 ---
 
-**InboxGenie** - Transform your email experience with AI intelligence! 🚀
+**Built with ❤️ using FastAPI, React, OpenAI, and Docker**
