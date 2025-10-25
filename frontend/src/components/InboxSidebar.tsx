@@ -10,14 +10,17 @@ import {
   FileText,
   AlertTriangle,
   CheckCircle,
-  ShoppingBag
+  ShoppingBag,
+  Edit3,
+  Shield,
+  AlertCircle
 } from "lucide-react";
 
 interface InboxSidebarProps {
   onLogout: () => void;
   activeCategory: string;
   setActiveCategory: (category: string) => void;
-  counts: { unread: number; starred: number };
+  counts: { unread: number; starred: number; drafts?: number; archived?: number; trashed?: number; spam?: number; gray?: number };
   onCompose?: () => void;
 }
 
@@ -27,6 +30,9 @@ export default function InboxSidebar({ onLogout, activeCategory, setActiveCatego
     { name: 'all', label: 'All Mail', icon: Inbox, count: null },
     { name: 'unread', label: 'Unread', icon: FileText, count: counts.unread },
     { name: 'starred', label: 'Starred', icon: Star, count: counts.starred },
+    { name: 'drafts', label: 'Drafts', icon: Edit3, count: counts.drafts || 0 },
+    { name: 'archived', label: 'Archive', icon: Archive, count: counts.archived || 0 },
+    { name: 'trashed', label: 'Trash', icon: Trash2, count: counts.trashed || 0 },
     { name: 'sent', label: 'Sent', icon: Send, count: 0 },
   ];
 
@@ -36,6 +42,8 @@ export default function InboxSidebar({ onLogout, activeCategory, setActiveCatego
     { name: 'Important', icon: CheckCircle },
     { name: 'Task', icon: CheckCircle },
     { name: 'Promotion', icon: ShoppingBag },
+    { name: 'Spam', icon: Shield, count: counts.spam || 0, color: 'text-red-600' },
+    { name: 'Gray', icon: AlertCircle, count: counts.gray || 0, color: 'text-gray-500' },
   ];
 
   return (
@@ -87,9 +95,14 @@ export default function InboxSidebar({ onLogout, activeCategory, setActiveCatego
             }`}
           >
             <span className="flex items-center gap-3">
-              <item.icon className="w-5 h-5" /> 
+              <item.icon className={`w-5 h-5 ${item.color || ''}`} /> 
               <span className="font-semibold">{item.name}</span>
             </span>
+            {item.count !== undefined && (
+              <span className="bg-purple-600/20 text-purple-300 px-2 py-1 rounded-full text-xs font-semibold">
+                {item.count}
+              </span>
+            )}
           </button>
         ))}
       </nav>

@@ -14,9 +14,11 @@ import {
   LayoutGrid,
   List,
   Search,
-  RefreshCw
+  RefreshCw,
+  Archive,
+  Trash2
 } from "lucide-react";
-import { fetchEmails, Email, archiveEmail, trashEmail, moveToInbox, markEmailRead } from "../services/api";
+import { fetchEmails, Email, archiveEmail, trashEmail, moveToInbox, markEmailRead, archiveEmails, deleteEmails, fetchDrafts, unarchiveEmail, restoreEmail, logout } from "../services/api";
 
 const CATEGORIES = ['General', 'Urgent', 'Task', 'Important', 'Promotion'];
 
@@ -34,6 +36,8 @@ function Dashboard({ onLogout }: DashboardProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedEmailId, setExpandedEmailId] = useState<string | null>(null);
   const [replyToEmail, setReplyToEmail] = useState<any>(null);
+  const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());
+  const [drafts, setDrafts] = useState<Email[]>([]);
   const [starredIds, setStarredIds] = useState<Set<string>>(() => {
     // Optionally: persist starring in localStorage
     const stored = localStorage.getItem('starredIds');
@@ -54,10 +58,10 @@ function Dashboard({ onLogout }: DashboardProps) {
         snippet: email.snippet || "No snippet available",
         content: email.snippet + "\n\nThis is placeholder content for the full email body.",
         category: CATEGORIES[Math.floor(Math.random() * (CATEGORIES.length - 1)) + 1] as any,
-        status: 'inbox',
+        status: email.status || 'inbox',
         isStarred: email.isStarred || false,
-        date: email.date ? new Date(email.date).toLocaleDateString() : new Date().toLocaleDateString(),
-        isRead: email.isRead || false,
+        date: email.created_at ? new Date(email.created_at).toLocaleDateString() : new Date().toLocaleDateString(),
+        isRead: email.is_read || false,
         aiSummary: `This is a sample AI summary for the email from ${email.sender}. The main topic is "${email.subject}".`,
       }));
       setEmails(emailsWithFeatures);
@@ -69,16 +73,68 @@ function Dashboard({ onLogout }: DashboardProps) {
     }
   };
 
+  const loadDrafts = async () => {
+    try {
+      const data: any[] = await fetchDrafts();
+      
+      // Transform draft data to match our Email interface
+      const draftsWithFeatures: Email[] = data.map((draft: any) => ({
+        id: draft.id ? draft.id.toString() : Math.random().toString(),
+        sender: draft.sender || "Unknown Sender",
+        subject: draft.subject || "Draft",
+        snippet: draft.snippet || "Draft content",
+        content: draft.snippet + "\n\nThis is draft content.",
+        category: 'General' as any,
+        status: 'draft' as any,
+        isStarred: false,
+        date: draft.created_at ? new Date(draft.created_at).toLocaleDateString() : new Date().toLocaleDateString(),
+        isRead: true,
+        aiSummary: "This is a draft email.",
+      }));
+      setDrafts(draftsWithFeatures);
+    } catch (err) {
+      console.error("Failed to load drafts:", err);
+    }
+  };
+
   useEffect(() => {
     loadEmails();
+    loadDrafts();
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // Clear all frontend state
+      setEmails([]);
+      setDrafts([]);
+      setSelectedEmails(new Set());
+      setStarredIds(new Set());
+      setExpandedEmailId(null);
+      setSearchQuery('');
+      setSelectedTab("all");
+      // Call the parent logout function
+      onLogout();
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Still call onLogout to redirect to login page
+      onLogout();
+    }
+  };
 
   const filteredEmails = useMemo(() => {
     let tempEmails = emails;
 
-    if (selectedTab !== "all") {
+    if (selectedTab === "drafts") {
+      tempEmails = drafts;
+    } else if (selectedTab === "all") {
+      // All Mail should only show inbox emails (not archived or trashed)
+      tempEmails = tempEmails.filter(e => e.status === "inbox" || !e.status);
+    } else {
       if (selectedTab === "unread") tempEmails = tempEmails.filter(e => !e.isRead);
       else if (selectedTab === "starred") tempEmails = tempEmails.filter(e => starredIds.has(e.id));
+      else if (selectedTab === "archived") tempEmails = tempEmails.filter(e => e.status === "archived");
+      else if (selectedTab === "trashed") tempEmails = tempEmails.filter(e => e.status === "trashed");
       else if (selectedTab === "sent") tempEmails = tempEmails.filter(e => e.status === "sent" || (e.labels || '').includes("SENT"));
       else tempEmails = tempEmails.filter(e => e.category === selectedTab);
     }
@@ -91,7 +147,7 @@ function Dashboard({ onLogout }: DashboardProps) {
     }
 
     return tempEmails;
-  }, [emails, selectedTab, searchQuery, starredIds]);
+  }, [emails, drafts, selectedTab, searchQuery, starredIds]);
 
   const handleEmailClick = (id: string) => {
     setExpandedEmailId(prevId => prevId === id ? null : id);
@@ -186,37 +242,171 @@ function Dashboard({ onLogout }: DashboardProps) {
     }
   };
 
+  const handleUnarchive = async (emailId: string) => {
+    try {
+      await unarchiveEmail(emailId);
+      // Update local state to reflect the change
+      setEmails(prevEmails => 
+        prevEmails.map(email => 
+          email.id === emailId ? { ...email, status: 'inbox' } : email
+        )
+      );
+    } catch (error) {
+      console.error("Failed to unarchive email:", error);
+      alert("Failed to unarchive email. Please try again.");
+    }
+  };
+
+  const handleRestore = async (emailId: string) => {
+    try {
+      await restoreEmail(emailId);
+      // Update local state to reflect the change
+      setEmails(prevEmails => 
+        prevEmails.map(email => 
+          email.id === emailId ? { ...email, status: 'inbox' } : email
+        )
+      );
+    } catch (error) {
+      console.error("Failed to restore email:", error);
+      alert("Failed to restore email. Please try again.");
+    }
+  };
+
+  // Bulk action handlers
+  const handleSelectAll = () => {
+    if (selectedEmails.size === filteredEmails.length) {
+      setSelectedEmails(new Set());
+    } else {
+      setSelectedEmails(new Set(filteredEmails.map(email => email.id)));
+    }
+  };
+
+  const handleSelectEmail = (emailId: string) => {
+    setSelectedEmails(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(emailId)) {
+        newSet.delete(emailId);
+      } else {
+        newSet.add(emailId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleBulkArchive = async () => {
+    if (selectedEmails.size === 0) return;
+    
+    try {
+      const messageIds = Array.from(selectedEmails);
+      await archiveEmails(messageIds);
+      
+      // Update local state
+      setEmails(prevEmails => 
+        prevEmails.map(email => 
+          selectedEmails.has(email.id) ? { ...email, status: 'archived' } : email
+        )
+      );
+      setSelectedEmails(new Set());
+    } catch (error) {
+      console.error("Failed to archive emails:", error);
+      alert("Failed to archive emails. Please try again.");
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedEmails.size === 0) return;
+    
+    try {
+      const messageIds = Array.from(selectedEmails);
+      await deleteEmails(messageIds);
+      
+      // Update local state
+      setEmails(prevEmails => 
+        prevEmails.map(email => 
+          selectedEmails.has(email.id) ? { ...email, status: 'trashed' } : email
+        )
+      );
+      setSelectedEmails(new Set());
+    } catch (error) {
+      console.error("Failed to delete emails:", error);
+      alert("Failed to delete emails. Please try again.");
+    }
+  };
+
   const counts = {
     unread: emails.filter(e => !e.isRead).length,
     starred: starredIds.size,
+    drafts: drafts.length,
+    archived: emails.filter(e => e.status === 'archived').length,
+    trashed: emails.filter(e => e.status === 'trashed').length,
+    spam: emails.filter(e => e.category === 'Spam').length,
+    gray: emails.filter(e => e.category === 'Gray').length,
   };
 
   return (
     <div className="flex h-screen bg-gradient-to-b from-[#1e1b4b] to-[#4c1d95] font-['Inter',_sans-serif] text-gray-200">
-      <InboxSidebar onLogout={onLogout} activeCategory={selectedTab} setActiveCategory={setSelectedTab} counts={counts} onCompose={handleCompose} />
+      <InboxSidebar onLogout={handleLogout} activeCategory={selectedTab} setActiveCategory={setSelectedTab} counts={counts} onCompose={handleCompose} />
 
       <main className="flex-1 flex flex-col">
-        {/* Header with search */}
-        <header className="flex items-center justify-center p-4 border-b border-gray-500/50 flex-shrink-0">
-          <div className="relative w-1/2 max-w-lg">
-            <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search emails..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-gray-800/50 border border-gray-700 rounded-full py-2.5 pl-10 pr-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
+        {/* Header with search and bulk actions */}
+        <header className="flex items-center justify-between p-4 border-b border-gray-500/50 flex-shrink-0">
+          <div className="flex items-center space-x-4">
+            {/* Select All Checkbox - only show when at least one email is selected */}
+            {selectedEmails.size > 0 && (
+              <input
+                type="checkbox"
+                checked={filteredEmails.length > 0 && selectedEmails.size === filteredEmails.length}
+                onChange={handleSelectAll}
+                className="w-4 h-4 text-purple-600 bg-gray-800 border-gray-600 rounded focus:ring-purple-500"
+              />
+            )}
+            
+            {/* Bulk Action Buttons */}
+            {selectedEmails.size > 0 && (
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBulkArchive}
+                  className="hover-lift"
+                >
+                  <Archive className="w-4 h-4 mr-2" />
+                  Archive ({selectedEmails.size})
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                  className="hover-lift text-red-400 border-red-400 hover:bg-red-400/10"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete ({selectedEmails.size})
+                </Button>
+              </div>
+            )}
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="ml-4 hover-lift"
-            onClick={loadEmails}
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
-          </Button>
+
+          <div className="flex items-center space-x-4">
+            <div className="relative w-64">
+              <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search emails..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-gray-800/50 border border-gray-700 rounded-full py-2.5 pl-10 pr-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="hover-lift"
+              onClick={loadEmails}
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
         </header>
 
         {/* AI Composer */}
@@ -226,6 +416,7 @@ function Dashboard({ onLogout }: DashboardProps) {
               <AIComposer 
                 replyToEmail={replyToEmail}
                 onClose={handleCloseComposer}
+                onDraftSaved={loadDrafts}
               />
             </div>
           </div>
@@ -248,11 +439,15 @@ function Dashboard({ onLogout }: DashboardProps) {
                 key={email.id} 
                 email={email} 
                 isExpanded={expandedEmailId === email.id}
+                isSelected={selectedEmails.has(email.id)}
                 onClick={handleEmailClick}
+                onSelect={handleSelectEmail}
                 onArchive={() => handleArchive(email.id)}
                 onTrash={() => handleTrash(email.id)}
                 onToggleStar={handleToggleStar}
                 onMoveToInbox={() => handleMoveToInbox(email.id)}
+                onUnarchive={() => handleUnarchive(email.id)}
+                onRestore={() => handleRestore(email.id)}
                 onReply={() => handleReply(email)}
                 isStarred={starredIds.has(email.id)}
               />

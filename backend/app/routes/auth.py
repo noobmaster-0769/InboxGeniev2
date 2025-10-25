@@ -5,6 +5,7 @@ from app.database import get_db
 from app.config import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI
 from google_auth_oauthlib.flow import Flow
 from app.services.gmail_service import exchange_code_and_store_tokens
+from app.models import User, Email
 
 router = APIRouter()
 
@@ -48,4 +49,25 @@ def google_callback(request: Request, db: Session = Depends(get_db)):
     
     # CORRECTED: Redirect to the frontend address (port 8080)
     return RedirectResponse("http://localhost:8080/?auth=success")
+
+@router.post("/logout")
+def logout(db: Session = Depends(get_db)):
+    """Clear all user data when logging out"""
+    try:
+        # Get the most recently logged-in user
+        user = db.query(User).order_by(User.id.desc()).first()
+        if user:
+            # Delete all emails for this user
+            db.query(Email).filter(Email.user_id == user.id).delete()
+            
+            # Delete the user
+            db.delete(user)
+            db.commit()
+            
+            return {"success": True, "message": "Logged out successfully"}
+        else:
+            return {"success": True, "message": "No user to logout"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Logout failed: {str(e)}")
 

@@ -105,6 +105,26 @@ export async function generateSmartReplies(text: string) {
   }
 }
 
+export async function suggestReplies(emailBody: string) {
+  try {
+    const response = await api.post("/ai/suggest-replies", { text: emailBody });
+    return response.data;
+  } catch (error) {
+    console.error("Error generating reply suggestions:", error);
+    throw error;
+  }
+}
+
+export async function summarizeEmailById(messageId: string) {
+  try {
+    const response = await api.post(`/ai/summarize-email/${messageId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error summarizing email:", error);
+    throw error;
+  }
+}
+
 export async function checkAIHealth() {
   try {
     const response = await api.get("/ai/health");
@@ -156,6 +176,27 @@ export async function markEmailRead(emailId: string) {
   }
 }
 
+// Bulk action functions
+export async function archiveEmails(messageIds: string[]) {
+  try {
+    const response = await api.post("/gmail/archive", { message_ids: messageIds });
+    return response.data;
+  } catch (error) {
+    console.error("Error archiving emails:", error);
+    throw error;
+  }
+}
+
+export async function deleteEmails(messageIds: string[]) {
+  try {
+    const response = await api.post("/gmail/trash", { message_ids: messageIds });
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting emails:", error);
+    throw error;
+  }
+}
+
 // Email Sending Function
 export async function sendEmail(emailData: { to: string; subject: string; body: string }) {
   try {
@@ -163,6 +204,59 @@ export async function sendEmail(emailData: { to: string; subject: string; body: 
     return response.data;
   } catch (error) {
     console.error("Error sending email:", error);
+    throw error;
+  }
+}
+
+// Draft functions
+export async function saveDraft(draftData: { to: string; subject: string; body: string }) {
+  try {
+    const response = await api.post("/gmail/drafts/save", draftData);
+    return response.data;
+  } catch (error) {
+    console.error("Error saving draft:", error);
+    throw error;
+  }
+}
+
+export async function fetchDrafts(): Promise<any[]> {
+  try {
+    const response = await api.get("/gmail/drafts");
+    return response.data.drafts || [];
+  } catch (error) {
+    console.error("Error fetching drafts:", error);
+    return [];
+  }
+}
+
+// Reversible action functions
+export async function unarchiveEmail(emailId: string) {
+  try {
+    const response = await api.post(`/gmail/unarchive/${emailId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error unarchiving email:", error);
+    throw error;
+  }
+}
+
+export async function restoreEmail(emailId: string) {
+  try {
+    const response = await api.post(`/gmail/restore/${emailId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error restoring email:", error);
+    throw error;
+  }
+}
+
+// Authentication functions
+export async function logout() {
+  try {
+    const response = await api.post("/auth/logout");
+    return response.data;
+  } catch (error) {
+    console.error("Error logging out:", error);
     throw error;
   }
 }

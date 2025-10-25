@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sparkles, Send, X, Wand2, Bot, Reply, Zap } from "lucide-react";
-import { rewriteEmailTone, generateAutoReply, generateSmartReplies, sendEmail } from "@/services/api";
+import { rewriteEmailTone, generateAutoReply, generateSmartReplies, sendEmail, saveDraft } from "@/services/api";
 
 interface AIComposerProps {
   replyToEmail?: {
@@ -15,9 +15,10 @@ interface AIComposerProps {
     content: string;
   };
   onClose?: () => void;
+  onDraftSaved?: () => void;
 }
 
-export default function AIComposer({ replyToEmail, onClose }: AIComposerProps) {
+export default function AIComposer({ replyToEmail, onClose, onDraftSaved }: AIComposerProps) {
   const [recipient, setRecipient] = useState(replyToEmail?.sender || "");
   const [subject, setSubject] = useState(replyToEmail ? `Re: ${replyToEmail.subject}` : "");
   const [message, setMessage] = useState("");
@@ -28,6 +29,7 @@ export default function AIComposer({ replyToEmail, onClose }: AIComposerProps) {
   const [composeMode, setComposeMode] = useState<'new' | 'reply'>('new');
   const [smartReplies, setSmartReplies] = useState<string[]>([]);
   const [isSending, setIsSending] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
 
   const handleSend = async () => {
     if (!recipient || !subject || !message) {
@@ -132,6 +134,40 @@ export default function AIComposer({ replyToEmail, onClose }: AIComposerProps) {
   const selectSmartReply = (reply: string) => {
     setMessage(reply);
     setSmartReplies([]);
+  };
+
+  const handleSaveDraft = async () => {
+    if (!subject && !message) {
+      alert("Please enter either a subject or message to save as draft");
+      return;
+    }
+
+    setIsSavingDraft(true);
+    try {
+      const result = await saveDraft({
+        to: recipient,
+        subject: subject,
+        body: message
+      });
+      
+      if (result.success) {
+        alert("Draft saved successfully!");
+        // Call the callback to refresh drafts
+        onDraftSaved?.();
+        // Optionally clear the form or close the composer
+        // setRecipient("");
+        // setSubject("");
+        // setMessage("");
+        // onClose?.();
+      } else {
+        alert("Failed to save draft. Please try again.");
+      }
+    } catch (error) {
+      console.error("Save draft error:", error);
+      alert("Error saving draft. Please check your connection and try again.");
+    } finally {
+      setIsSavingDraft(false);
+    }
   };
 
   return (
@@ -278,7 +314,13 @@ export default function AIComposer({ replyToEmail, onClose }: AIComposerProps) {
       </div>
 
       <div className="flex justify-end space-x-2">
-        <Button variant="outline">Save Draft</Button>
+        <Button 
+          variant="outline" 
+          onClick={handleSaveDraft}
+          disabled={isSavingDraft}
+        >
+          {isSavingDraft ? "Saving..." : "Save Draft"}
+        </Button>
         <Button onClick={handleSend} className="ai-button" disabled={isSending}>
           <Send className="w-4 h-4 mr-2" />
           {isSending ? "Sending..." : "Send"}
