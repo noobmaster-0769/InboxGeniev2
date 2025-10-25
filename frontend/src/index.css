@@ -14,16 +14,17 @@
     @apply font-['Inter',_sans-serif] text-gray-300;
     /* Match app gradient so overflow areas render consistently */
     background: linear-gradient(180deg, #1e1b4b 0%, #4c1d95 100%);
-    min-height: 150vh;
+    min-height: 100vh; /* Changed from 150vh to prevent unnecessary scrollbar */
     
-    /* Allow vertical and horizontal scrolling if needed */
+    /* Allow vertical scrolling only when needed */
     overflow-y: auto;
-    overflow-x: auto;
+    overflow-x: hidden; /* Prevent horizontal scrollbar */
   }
 
   /* Ensure the app has enough minimum width so right-side date column doesn't clip */
   #root {
-    min-width: 1200px; /* adjust if needed; enables horizontal scroll below this width */
+    min-width: 100vw; /* Changed from 1200px to prevent horizontal scrollbar */
+    min-height: 100vh;
   }
 
   /* Style for scrollbars to match the dark theme */

@@ -50,3 +50,119 @@ export interface Email {
   isRead: boolean;
   aiSummary?: string;
 }
+
+// AI Service Functions
+export async function classifyEmail(emailData: { subject?: string; content?: string; snippet?: string }) {
+  try {
+    const response = await api.post("/ai/classify", emailData);
+    return response.data;
+  } catch (error) {
+    console.error("Error classifying email:", error);
+    throw error;
+  }
+}
+
+export async function summarizeEmail(text: string) {
+  try {
+    const response = await api.post("/ai/summarize", { text });
+    return response.data;
+  } catch (error) {
+    console.error("Error summarizing email:", error);
+    throw error;
+  }
+}
+
+export async function rewriteEmailTone(text: string, tone: string) {
+  try {
+    const response = await api.post("/ai/rewrite", { text, tone });
+    return response.data;
+  } catch (error) {
+    console.error("Error rewriting email tone:", error);
+    throw error;
+  }
+}
+
+export async function generateAutoReply(originalEmail: string, context?: string) {
+  try {
+    const response = await api.post("/ai/auto-reply", { 
+      original_email: originalEmail, 
+      context: context || "" 
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error generating auto-reply:", error);
+    throw error;
+  }
+}
+
+export async function generateSmartReplies(text: string) {
+  try {
+    const response = await api.post("/ai/smart-reply", { text });
+    return response.data;
+  } catch (error) {
+    console.error("Error generating smart replies:", error);
+    throw error;
+  }
+}
+
+export async function checkAIHealth() {
+  try {
+    const response = await api.get("/ai/health");
+    return response.data;
+  } catch (error) {
+    console.error("Error checking AI health:", error);
+    throw error;
+  }
+}
+
+// Email Action Functions
+export async function archiveEmail(emailId: string) {
+  try {
+    const response = await api.post(`/gmail/archive/${emailId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error archiving email:", error);
+    throw error;
+  }
+}
+
+export async function trashEmail(emailId: string) {
+  try {
+    const response = await api.post(`/gmail/trash/${emailId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error trashing email:", error);
+    throw error;
+  }
+}
+
+export async function moveToInbox(emailId: string) {
+  try {
+    const response = await api.post(`/gmail/inbox/${emailId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error moving email to inbox:", error);
+    throw error;
+  }
+}
+
+export async function markEmailRead(emailId: string) {
+  try {
+    const response = await api.post(`/gmail/mark-read/${emailId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error marking email as read:", error);
+    throw error;
+  }
+}
+
+// Email Sending Function
+export async function sendEmail(emailData: { to: string; subject: string; body: string }) {
+  try {
+    const response = await api.post("/gmail/send", emailData);
+    return response.data;
+  } catch (error) {
+    console.error("Error sending email:", error);
+    throw error;
+  }
+}

@@ -27,6 +27,8 @@ class Email(Base):
     ai_summary_enc = Column(Text, nullable=True)        # encrypted summary
     ai_classification_enc = Column(Text, nullable=True) # encrypted classification
     is_spam = Column(Boolean, default=False)
+    is_read = Column(Boolean, default=False)
+    status = Column(String(50), default="inbox")  # inbox, archived, trashed
     created_at = Column(DateTime, default=datetime.utcnow)
 
     owner = relationship("User", back_populates="emails")

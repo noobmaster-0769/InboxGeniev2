@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sparkles, Send, X, Wand2, Bot, Reply, Zap } from "lucide-react";
+import { rewriteEmailTone, generateAutoReply, generateSmartReplies, sendEmail } from "@/services/api";
 
 interface AIComposerProps {
   replyToEmail?: {
@@ -23,47 +24,114 @@ export default function AIComposer({ replyToEmail, onClose }: AIComposerProps) {
   const [tone, setTone] = useState("professional");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAutoReplying, setIsAutoReplying] = useState(false);
+  const [isSmartReplying, setIsSmartReplying] = useState(false);
   const [composeMode, setComposeMode] = useState<'new' | 'reply'>('new');
+  const [smartReplies, setSmartReplies] = useState<string[]>([]);
+  const [isSending, setIsSending] = useState(false);
 
-  const handleSend = () => {
-    // TODO: Implement email sending logic
-    console.log("Sending email:", { recipient, subject, message, tone });
-    onClose?.();
+  const handleSend = async () => {
+    if (!recipient || !subject || !message) {
+      alert("Please fill in all required fields (To, Subject, Message)");
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      const result = await sendEmail({
+        to: recipient,
+        subject: subject,
+        body: message
+      });
+      
+      if (result.success) {
+        alert(`Email sent successfully to ${recipient}!`);
+        // Clear the form
+        setRecipient("");
+        setSubject("");
+        setMessage("");
+        onClose?.();
+      } else {
+        alert("Failed to send email. Please try again.");
+      }
+    } catch (error) {
+      console.error("Send email error:", error);
+      alert("Error sending email. Please check your connection and try again.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
-  const handleAIGenerate = () => {
+  const handleAIGenerate = async () => {
+    if (!message.trim()) {
+      alert("Please enter some text to rewrite");
+      return;
+    }
+
     setIsGenerating(true);
-    // TODO: Implement AI generation logic based on tone
-    setTimeout(() => {
-      const toneExamples = {
-        professional: "Dear [Name],\n\nI hope this email finds you well. I am writing to discuss...\n\nBest regards,\n[Your Name]",
-        casual: "Hey [Name],\n\nHope you're doing well! Just wanted to reach out about...\n\nTalk soon,\n[Your Name]",
-        friendly: "Hi [Name],\n\nI hope you're having a great day! I wanted to touch base regarding...\n\nLooking forward to hearing from you,\n[Your Name]",
-        formal: "Dear [Name],\n\nI am writing to formally address the matter of...\n\nI look forward to your prompt response.\n\nSincerely,\n[Your Name]"
-      };
-      setMessage(toneExamples[tone as keyof typeof toneExamples] || toneExamples.professional);
+    try {
+      const response = await rewriteEmailTone(message, tone);
+      if (response.success) {
+        setMessage(response.rewritten_text);
+      } else {
+        alert("Failed to generate AI content. Please try again.");
+      }
+    } catch (error) {
+      console.error("AI generation error:", error);
+      alert("Error generating AI content. Please check your connection and try again.");
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
   };
 
-  const handleAutoReply = () => {
+  const handleAutoReply = async () => {
+    if (!replyToEmail) {
+      alert("No email to reply to");
+      return;
+    }
+
     setIsAutoReplying(true);
-    // TODO: Implement AI auto-reply logic
-    setTimeout(() => {
-      const autoReplyMessage = `Thank you for your email regarding "${replyToEmail?.subject}". I have received your message and will review it carefully. I will get back to you within 24 hours with a detailed response.\n\nBest regards,\n[Your Name]`;
-      setMessage(autoReplyMessage);
+    try {
+      const originalEmailText = `Subject: ${replyToEmail.subject}\nFrom: ${replyToEmail.sender}\nContent: ${replyToEmail.content}`;
+      const response = await generateAutoReply(originalEmailText);
+      if (response.success) {
+        setMessage(response.reply);
+      } else {
+        alert("Failed to generate auto-reply. Please try again.");
+      }
+    } catch (error) {
+      console.error("Auto-reply error:", error);
+      alert("Error generating auto-reply. Please check your connection and try again.");
+    } finally {
       setIsAutoReplying(false);
-    }, 3000);
+    }
   };
 
-  const handleSmartReply = () => {
-    setIsGenerating(true);
-    // TODO: Implement smart reply based on email content
-    setTimeout(() => {
-      const smartReply = `Thank you for reaching out about "${replyToEmail?.subject}". Based on your message, I understand you're looking for information about this topic. Let me provide you with the following details:\n\n[AI-generated response based on email content]\n\nPlease let me know if you need any clarification.\n\nBest regards,\n[Your Name]`;
-      setMessage(smartReply);
-      setIsGenerating(false);
-    }, 2500);
+  const handleSmartReply = async () => {
+    if (!replyToEmail) {
+      alert("No email to reply to");
+      return;
+    }
+
+    setIsSmartReplying(true);
+    try {
+      const originalEmailText = `Subject: ${replyToEmail.subject}\nFrom: ${replyToEmail.sender}\nContent: ${replyToEmail.content}`;
+      const response = await generateSmartReplies(originalEmailText);
+      if (response.success) {
+        setSmartReplies(response.replies);
+      } else {
+        alert("Failed to generate smart replies. Please try again.");
+      }
+    } catch (error) {
+      console.error("Smart reply error:", error);
+      alert("Error generating smart replies. Please check your connection and try again.");
+    } finally {
+      setIsSmartReplying(false);
+    }
+  };
+
+  const selectSmartReply = (reply: string) => {
+    setMessage(reply);
+    setSmartReplies([]);
   };
 
   return (
@@ -141,6 +209,25 @@ export default function AIComposer({ replyToEmail, onClose }: AIComposerProps) {
         />
       </div>
 
+      {/* Smart Reply Options */}
+      {smartReplies.length > 0 && (
+        <div className="space-y-2">
+          <Label>Smart Reply Options</Label>
+          <div className="space-y-2">
+            {smartReplies.map((reply, index) => (
+              <Button
+                key={index}
+                variant="outline"
+                className="w-full text-left justify-start h-auto p-3"
+                onClick={() => selectSmartReply(reply)}
+              >
+                <span className="text-sm">{reply}</span>
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="message">Message</Label>
@@ -172,11 +259,11 @@ export default function AIComposer({ replyToEmail, onClose }: AIComposerProps) {
                 variant="outline"
                 size="sm"
                 onClick={handleSmartReply}
-                disabled={isGenerating}
+                disabled={isSmartReplying}
                 className="ai-button-secondary"
               >
                 <Zap className="w-4 h-4 mr-2" />
-                {isGenerating ? "Smart Replying..." : "Smart Reply"}
+                {isSmartReplying ? "Smart Replying..." : "Smart Reply"}
               </Button>
             )}
           </div>
@@ -192,9 +279,9 @@ export default function AIComposer({ replyToEmail, onClose }: AIComposerProps) {
 
       <div className="flex justify-end space-x-2">
         <Button variant="outline">Save Draft</Button>
-        <Button onClick={handleSend} className="ai-button">
+        <Button onClick={handleSend} className="ai-button" disabled={isSending}>
           <Send className="w-4 h-4 mr-2" />
-          Send
+          {isSending ? "Sending..." : "Send"}
         </Button>
       </div>
     </div>

@@ -160,16 +160,9 @@ function App() {
         return;
       }
       
-      // Check if user has a valid auth token
-      const hasAuthToken = localStorage.getItem('auth_token');
-      if (hasAuthToken) {
-        // User has token, consider them authenticated
-        setIsAuthenticated(true);
-      } else {
-        // No auth token, show landing page
-        setIsAuthenticated(false);
-      }
-      
+      // For now, always show landing page first (no persistent auth)
+      // This ensures users always see the landing page on first visit
+      setIsAuthenticated(false);
       setIsCheckingAuth(false);
     };
     

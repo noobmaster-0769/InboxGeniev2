@@ -16,7 +16,7 @@ import {
   Search,
   RefreshCw
 } from "lucide-react";
-import { fetchEmails, Email } from "../services/api";
+import { fetchEmails, Email, archiveEmail, trashEmail, moveToInbox, markEmailRead } from "../services/api";
 
 const CATEGORIES = ['General', 'Urgent', 'Task', 'Important', 'Promotion'];
 
@@ -34,7 +34,11 @@ function Dashboard({ onLogout }: DashboardProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedEmailId, setExpandedEmailId] = useState<string | null>(null);
   const [replyToEmail, setReplyToEmail] = useState<any>(null);
-  const [starredEmails, setStarredEmails] = useState<Set<string>>(new Set());
+  const [starredIds, setStarredIds] = useState<Set<string>>(() => {
+    // Optionally: persist starring in localStorage
+    const stored = localStorage.getItem('starredIds');
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  });
 
   const loadEmails = async () => {
     setIsLoading(true);
@@ -74,7 +78,8 @@ function Dashboard({ onLogout }: DashboardProps) {
 
     if (selectedTab !== "all") {
       if (selectedTab === "unread") tempEmails = tempEmails.filter(e => !e.isRead);
-      else if (selectedTab === "starred") tempEmails = tempEmails.filter(e => starredEmails.has(e.id));
+      else if (selectedTab === "starred") tempEmails = tempEmails.filter(e => starredIds.has(e.id));
+      else if (selectedTab === "sent") tempEmails = tempEmails.filter(e => e.status === "sent" || (e.labels || '').includes("SENT"));
       else tempEmails = tempEmails.filter(e => e.category === selectedTab);
     }
     
@@ -86,7 +91,7 @@ function Dashboard({ onLogout }: DashboardProps) {
     }
 
     return tempEmails;
-  }, [emails, selectedTab, searchQuery, starredEmails]);
+  }, [emails, selectedTab, searchQuery, starredIds]);
 
   const handleEmailClick = (id: string) => {
     setExpandedEmailId(prevId => prevId === id ? null : id);
@@ -108,20 +113,82 @@ function Dashboard({ onLogout }: DashboardProps) {
   };
 
   const handleToggleStar = (emailId: string) => {
-    setStarredEmails(prev => {
+    setStarredIds(prev => {
       const newSet = new Set(prev);
       if (newSet.has(emailId)) {
         newSet.delete(emailId);
       } else {
         newSet.add(emailId);
       }
+      // LocalStorage sync for persistence across tab refreshes
+      localStorage.setItem('starredIds', JSON.stringify(Array.from(newSet)));
       return newSet;
     });
   };
 
+  const handleArchive = async (emailId: string) => {
+    try {
+      await archiveEmail(emailId);
+      // Update local state to reflect the change
+      setEmails(prevEmails => 
+        prevEmails.map(email => 
+          email.id === emailId ? { ...email, status: 'archived' } : email
+        )
+      );
+    } catch (error) {
+      console.error("Failed to archive email:", error);
+      alert("Failed to archive email. Please try again.");
+    }
+  };
+
+  const handleTrash = async (emailId: string) => {
+    try {
+      await trashEmail(emailId);
+      // Update local state to reflect the change
+      setEmails(prevEmails => 
+        prevEmails.map(email => 
+          email.id === emailId ? { ...email, status: 'trashed' } : email
+        )
+      );
+    } catch (error) {
+      console.error("Failed to trash email:", error);
+      alert("Failed to move email to trash. Please try again.");
+    }
+  };
+
+  const handleMoveToInbox = async (emailId: string) => {
+    try {
+      await moveToInbox(emailId);
+      // Update local state to reflect the change
+      setEmails(prevEmails => 
+        prevEmails.map(email => 
+          email.id === emailId ? { ...email, status: 'inbox' } : email
+        )
+      );
+    } catch (error) {
+      console.error("Failed to move email to inbox:", error);
+      alert("Failed to move email to inbox. Please try again.");
+    }
+  };
+
+  const handleMarkAsRead = async (emailId: string) => {
+    try {
+      await markEmailRead(emailId);
+      // Update local state to reflect the change
+      setEmails(prevEmails => 
+        prevEmails.map(email => 
+          email.id === emailId ? { ...email, isRead: true } : email
+        )
+      );
+    } catch (error) {
+      console.error("Failed to mark email as read:", error);
+      alert("Failed to mark email as read. Please try again.");
+    }
+  };
+
   const counts = {
     unread: emails.filter(e => !e.isRead).length,
-    starred: starredEmails.size,
+    starred: starredIds.size,
   };
 
   return (
@@ -182,12 +249,12 @@ function Dashboard({ onLogout }: DashboardProps) {
                 email={email} 
                 isExpanded={expandedEmailId === email.id}
                 onClick={handleEmailClick}
-                onArchive={() => {}}
-                onTrash={() => {}}
-                onToggleStar={() => handleToggleStar(email.id)}
-                onMoveToInbox={() => {}}
+                onArchive={() => handleArchive(email.id)}
+                onTrash={() => handleTrash(email.id)}
+                onToggleStar={handleToggleStar}
+                onMoveToInbox={() => handleMoveToInbox(email.id)}
                 onReply={() => handleReply(email)}
-                isStarred={starredEmails.has(email.id)}
+                isStarred={starredIds.has(email.id)}
               />
             ))
           )}

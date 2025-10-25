@@ -6,7 +6,7 @@ export interface Email {
   id: string;
   sender: string;
   subject: string;
-  content: string; 
+  content?: string; 
   category: 'Urgent' | 'Task' | 'Promotion' | 'Important' | 'General';
   status: 'inbox' | 'archived' | 'trashed';
   aiSummary?: string;
