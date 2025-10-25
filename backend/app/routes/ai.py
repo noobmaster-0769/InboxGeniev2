@@ -89,6 +89,48 @@ def generate_smart_replies(text_input: TextIn):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Smart reply generation failed: {str(e)}")
 
+@router.post("/suggest-replies")
+def suggest_replies(text_input: TextIn):
+    """Generate smart reply suggestions based on email body"""
+    try:
+        replies = ai_service.suggest_replies(text_input.text)
+        return {
+            "success": True,
+            "replies": replies,
+            "message": f"Generated {len(replies)} reply suggestions"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Reply suggestions failed: {str(e)}")
+
+@router.post("/summarize-email/{email_id}")
+def summarize_email_by_id(email_id: str):
+    """Summarize an email by its database ID"""
+    from app.database import get_db
+    from app.models import Email
+    from sqlalchemy.orm import Session
+    
+    try:
+        db = next(get_db())
+        email = db.query(Email).filter(Email.id == int(email_id)).first()
+        
+        if not email:
+            raise HTTPException(status_code=404, detail="Email not found")
+        
+        # Use the email content for summarization
+        email_content = f"Subject: {email.subject}\n\nContent: {email.snippet}"
+        summary = ai_service.summarize(email_content)
+        
+        return {
+            "success": True,
+            "summary": summary,
+            "message": "Email summarized successfully"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Email summarization failed: {str(e)}")
+    finally:
+        if 'db' in locals():
+            db.close()
+
 @router.get("/health")
 def ai_health_check():
     """Check if AI service is working"""

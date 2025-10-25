@@ -28,35 +28,96 @@ class AIService:
             self.client = None
 
     def classify(self, text: str) -> Dict:
-        """Classify email into categories: IMPORTANT, PROMOTION, GENERAL, SPAM"""
+        """Classify email into categories: URGENT, IMPORTANT, TASK, PROMOTION, SPAM, GRAY"""
         if _GEMINI_AVAILABLE and self.client:
-            prompt = f"""Analyze the email content and classify it into one of these categories: IMPORTANT, PROMOTION, GENERAL, SPAM.\nReturn ONLY a JSON object with 'label' and 'score' fields. Example: {{\"label\": \"IMPORTANT\", \"score\": 0.95}}\n\nEmail:\nSubject: {text.get('subject', 'No subject')}\nContent: {text.get('content', text.get('snippet', ''))}\n"""
+            prompt = f"""Analyze the email content and classify it into one of these categories: URGENT, IMPORTANT, TASK, PROMOTION, SPAM, GRAY.
+
+Categories:
+- URGENT: Time-sensitive, requires immediate attention (deadlines, emergencies, urgent requests)
+- IMPORTANT: Significant but not time-sensitive (meetings, important updates, business communications)
+- TASK: Action items, assignments, work-related tasks, project updates
+- PROMOTION: Marketing emails, sales, discounts, offers, newsletters
+- SPAM: Suspicious, phishing, scam emails, unwanted promotional content
+- GRAY: Unclear purpose, low priority, automated messages, notifications
+
+Return ONLY a JSON object with 'label' and 'score' fields. Example: {{"label": "URGENT", "score": 0.95}}
+
+Email:
+Subject: {text.get('subject', 'No subject')}
+Content: {text.get('content', text.get('snippet', ''))}
+Sender: {text.get('sender', 'Unknown')}
+"""
             try:
                 response = self.client.generate_content(prompt)
                 content = response.text.strip()
+                
+                # Clean up any markdown formatting
+                if content.startswith('```json'):
+                    content = content.replace('```json', '').replace('```', '').strip()
+                elif content.startswith('```'):
+                    content = content.replace('```', '').strip()
+                
                 try:
                     result = json.loads(content)
-                    return {"label": result.get("label", "GENERAL"), "score": result.get("score", 0.5)}
+                    label = result.get("label", "GRAY")
+                    score = result.get("score", 0.5)
+                    
+                    # Validate the label is one of our categories
+                    valid_labels = ["URGENT", "IMPORTANT", "TASK", "PROMOTION", "SPAM", "GRAY"]
+                    if label not in valid_labels:
+                        label = "GRAY"
+                    
+                    return {"label": label, "score": score}
                 except json.JSONDecodeError:
-                    if "IMPORTANT" in content.upper():
+                    # Fallback parsing
+                    content_upper = content.upper()
+                    if "URGENT" in content_upper:
+                        return {"label": "URGENT", "score": 0.8}
+                    elif "IMPORTANT" in content_upper:
                         return {"label": "IMPORTANT", "score": 0.8}
-                    elif "PROMOTION" in content.upper():
+                    elif "TASK" in content_upper:
+                        return {"label": "TASK", "score": 0.8}
+                    elif "PROMOTION" in content_upper:
                         return {"label": "PROMOTION", "score": 0.8}
-                    elif "SPAM" in content.upper():
+                    elif "SPAM" in content_upper:
                         return {"label": "SPAM", "score": 0.8}
                     else:
-                        return {"label": "GENERAL", "score": 0.6}
+                        return {"label": "GRAY", "score": 0.6}
             except Exception as e:
                 logger.exception(f"Gemini classify failed: {e}; falling back to heuristic.")
-        # Fallback heuristic classification
+        
+        # Enhanced fallback heuristic classification
         text_str = str(text).lower()
-        if any(word in text_str for word in ["unsubscribe", "sale", "promo", "discount", "offer", "deal"]):
-            return {"label": "PROMOTION", "score": 0.9}
-        if any(word in text_str for word in ["urgent", "deadline", "asap", "important", "meeting", "deadline"]):
-            return {"label": "IMPORTANT", "score": 0.9}
-        if any(word in text_str for word in ["congratulations", "winner", "free money", "click here", "verify account"]):
+        subject = str(text.get('subject', '')).lower()
+        sender = str(text.get('sender', '')).lower()
+        
+        # Spam detection
+        spam_indicators = ["congratulations", "winner", "free money", "click here", "verify account", "urgent action", "limited time", "act now", "no-reply", "noreply"]
+        if any(word in text_str for word in spam_indicators) or any(word in subject for word in ["urgent", "winner", "congratulations"]):
             return {"label": "SPAM", "score": 0.95}
-        return {"label": "GENERAL", "score": 0.6}
+        
+        # Urgent detection
+        urgent_indicators = ["urgent", "asap", "deadline", "emergency", "immediate", "critical", "today", "now"]
+        if any(word in text_str for word in urgent_indicators):
+            return {"label": "URGENT", "score": 0.9}
+        
+        # Task detection
+        task_indicators = ["task", "assignment", "project", "meeting", "schedule", "work", "complete", "finish", "due"]
+        if any(word in text_str for word in task_indicators):
+            return {"label": "TASK", "score": 0.8}
+        
+        # Promotion detection
+        promo_indicators = ["unsubscribe", "sale", "promo", "discount", "offer", "deal", "special", "newsletter", "marketing"]
+        if any(word in text_str for word in promo_indicators):
+            return {"label": "PROMOTION", "score": 0.9}
+        
+        # Important detection
+        important_indicators = ["important", "meeting", "update", "announcement", "business", "official"]
+        if any(word in text_str for word in important_indicators):
+            return {"label": "IMPORTANT", "score": 0.8}
+        
+        # Default to GRAY for unclear content
+        return {"label": "GRAY", "score": 0.6}
 
     def summarize(self, text: str) -> str:
         """Generate a concise summary of the email content"""
@@ -116,6 +177,57 @@ class AIService:
             try:
                 response = self.client.generate_content(prompt)
                 content = response.text.strip()
+                
+                # Remove markdown formatting if present
+                if content.startswith('```json'):
+                    content = content.replace('```json', '').replace('```', '').strip()
+                elif content.startswith('```'):
+                    content = content.replace('```', '').strip()
+                
+                # Clean up any remaining JSON artifacts
+                content = content.replace('json {', '').replace('json[', '').replace('json', '')
+                content = content.strip()
+                
+                try:
+                    replies = json.loads(content)
+                    if isinstance(replies, list):
+                        # Clean each reply of any remaining formatting
+                        clean_replies = []
+                        for reply in replies[:3]:
+                            if isinstance(reply, str):
+                                clean_reply = reply.strip().strip('"').strip("'")
+                                if clean_reply and not clean_reply.startswith('[') and not clean_reply.startswith(']'):
+                                    clean_replies.append(clean_reply)
+                        return clean_replies if clean_replies else ["Thank you for your email.", "I'll get back to you soon.", "Got it, thanks!"]
+                    else:
+                        return [content]
+                except json.JSONDecodeError:
+                    # If JSON parsing fails, try to extract lines manually
+                    lines = []
+                    for line in content.split('\n'):
+                        line = line.strip()
+                        if line and not line.startswith('[') and not line.startswith(']') and not line.startswith('{') and not line.startswith('}'):
+                            # Remove quotes and clean up
+                            clean_line = line.strip('"').strip("'").strip(',')
+                            if clean_line and len(clean_line) > 3:  # Only meaningful replies
+                                lines.append(clean_line)
+                    return lines[:3] if lines else ["Thank you for your email.", "I'll get back to you soon.", "Got it, thanks!"]
+            except Exception as e:
+                logger.exception(f"Gemini smart reply failed: {e}; falling back to generic options.")
+        # Fallback: generic smart replies
+        return [
+            "Thank you for your email. I'll review this and get back to you soon.",
+            "Got it! I'll take care of this and update you accordingly.",
+            "Thanks for reaching out. I'll look into this and respond with more details."
+        ]
+
+    def suggest_replies(self, email_body: str) -> List[str]:
+        """Generate smart reply suggestions based on email body"""
+        if _GEMINI_AVAILABLE and self.client:
+            prompt = f"""Based on the following email, generate 3 short, distinct, and context-appropriate reply suggestions. Examples: 'Got it, thanks!', 'I'll look into this.', 'Sounds good.'. Return the output as a JSON array of strings.\n\nEmail:\n{email_body}\n"""
+            try:
+                response = self.client.generate_content(prompt)
+                content = response.text.strip()
                 try:
                     replies = json.loads(content)
                     if isinstance(replies, list):
@@ -126,11 +238,12 @@ class AIService:
                     lines = [line.strip() for line in content.split('\n') if line.strip()]
                     return lines[:3]
             except Exception as e:
-                logger.exception(f"Gemini smart reply failed: {e}; falling back to generic options.")
+                logger.exception(f"Gemini suggest replies failed: {e}; falling back to generic options.")
         # Fallback: generic smart replies
         return [
-            "Thank you for your email. I'll review this and get back to you soon.",
-            "Got it! I'll take care of this and update you accordingly.",
-            "Thanks for reaching out. I'll look into this and respond with more details."
+            "Got it, thanks!",
+            "I'll look into this.",
+            "Sounds good."
         ]
+
 ai_service = AIService()
