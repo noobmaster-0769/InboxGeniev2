@@ -40,3 +40,4 @@ yarn-error.log*
 
 # Ignore Windows specific files
 Thumbs.db
+backend/.env
